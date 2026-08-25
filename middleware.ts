@@ -1,4 +1,3 @@
-if (typeof globalThis.__dirname === 'undefined') { (globalThis as any).__dirname = '/'; }
 
 import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
@@ -41,6 +40,7 @@ export default auth((request) => {
 });
 
 export const config = {
+  runtime: 'nodejs',
   matcher: [
     '/',
     '/chat/:id',
