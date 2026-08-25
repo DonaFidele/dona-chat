@@ -1,9 +1,11 @@
-import { registerOTel } from '@vercel/otel';
-import { LangfuseExporter } from 'langfuse-vercel';
+export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { registerOTel } = await import('@vercel/otel');
+    const { LangfuseExporter } = await import('langfuse-vercel');
 
-export function register() {
-  registerOTel({
-    serviceName: 'ai-chatbot',
-    traceExporter: new LangfuseExporter(),
-  });
+    registerOTel({
+      serviceName: 'ai-chatbot',
+      traceExporter: new LangfuseExporter(),
+    });
+  }
 }
