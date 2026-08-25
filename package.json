@@ -60,6 +60,7 @@
     "fast-deep-equal": "^3.1.3",
     "framer-motion": "^11.3.19",
     "geist": "^1.3.1",
+    "jose": "^6.2.10",
     "langchain": "^0.3.29",
     "langfuse-vercel": "^3.37.6",
     "lucide-react": "^0.446.0",
