@@ -1,3 +1,5 @@
+if (typeof globalThis.__dirname === 'undefined') { (globalThis as any).__dirname = '/'; }
+
 import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authConfig } from './app/(auth)/auth.config';
