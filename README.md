@@ -1,112 +1,103 @@
-# RAG AI Chatbot
+# Dona Chat
 
-This is a forked and customized version of the [vercel/ai-chatbot](https://github.com/vercel/ai-chatbot) repo.
+A RAG (Retrieval-Augmented Generation) chatbot built with Next.js and the AI SDK, able to answer questions based on a set of indexed documents.
 
-It extends the original chatbot with support for RAG (Retrieval-Augmented Generation). Changes include:
+This project is a customized fork of [emertechie/rag-ai-chatbot](https://github.com/emertechie/rag-ai-chatbot), itself based on Vercel's [Chat SDK](https://github.com/vercel/chatbot).
 
-* CLI-based document indexer with support for file system and llms.txt-based indexing. Full source in the [`/indexer`](https://github.com/emertechie/rag-ai-chatbot/tree/main/indexer) folder.
-* Database migrations and query support for indexed documents and their chunked encodings
-* A custom AI tool to enable the chatbot to search knowledge in the database tables
-* Customized system prompt to ensure the chatbot only uses knowledge from the database to reply, to avoid hallucinations
-* A custom UI component to display information sources
+## About
 
-Full diff of my changes available [here](https://github.com/vercel/ai-chatbot/compare/main...emertechie:rag-ai-chatbot:main).
+The goal of this project is to build a chatbot that can:
+- Answer general questions through an LLM
+- Index one or more documents (Markdown for now, extensible to other formats)
+- Answer precise questions based on the content of these documents (RAG)
+- Display the sources used for each answer
 
-## Document indexer
+## Tech stack
 
-Run the `indexer/index.ts` script to fetch and index Markdown documents. See usage instructions below. 
+- **Framework**: [Next.js](https://nextjs.org) (App Router)
+- **AI**: [AI SDK](https://sdk.vercel.ai/docs) (Vercel), OpenAI models (GPT-4o, GPT-3.5 Turbo, DALL·E 3, text-embedding-3-small)
+- **Database**: PostgreSQL via [Neon](https://neon.tech) + [Drizzle ORM](https://orm.drizzle.team)
+- **File storage**: [Vercel Blob](https://vercel.com/storage/blob)
+- **Authentication**: [Auth.js](https://authjs.dev)
+- **UI**: [shadcn/ui](https://ui.shadcn.com), [Tailwind CSS](https://tailwindcss.com), [Radix UI](https://radix-ui.com)
+- **Package manager**: pnpm
 
-Environment variables can optionally be passed with the `--env-file` parameter pointing to a `.env.local` file. See the `.env.example` file for the expected variables.
+## Local setup
 
-### llms.txt
+### Prerequisites
 
-Use the `--url` parameter with an [`llms.txt`](https://llmstxt.org/) file link to index all Mardown documents included in the file. Currently, that's the only type of URL supported.
+- Node.js 18+
+- pnpm (`npm i -g pnpm`)
+- A [Vercel](https://vercel.com) account (free) to provision the Neon database and Blob storage
+- An OpenAI-compatible API key (direct, or via the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway))
 
+### Steps
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/DonaFidele/dona-chat.git
+   cd dona-chat
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Set up environment variables**
+
+   Link the project to Vercel to automatically provision the database and storage:
+   ```bash
+   vercel link
+   vercel env pull
+   ```
+
+   Then manually fill in `.env.local` (see `.env.example`):
+   - `AUTH_SECRET`: generate with `openssl rand -base64 32`
+   - `OPENAI_API_KEY` or `AI_GATEWAY_API_KEY`: API key for the language model(s)
+
+4. **Run database migrations**
+   ```bash
+   pnpm db:migrate
+   ```
+
+5. **Start the development server**
+   ```bash
+   pnpm dev
+   ```
+
+   The app is available at [http://localhost:3000](http://localhost:3000).
+
+## Indexing documents
+
+The chatbot prioritizes answers based on the documents indexed in its knowledge base.
+
+**From a local folder** (`.md` / `.mdx` files):
 ```bash
-npx tsx --env-file=.env.local indexer/index.ts --url <link-to-llms.txt> [--delay <number>] [--max-files <number>]
+npx tsx --env-file=.env.local indexer/index.ts --path ./my-documents
 ```
 
-**Optional parameters**
-
-- `delay`: Number of milliseconds of delay between fetch requests. Default: `250`
-- `max-files`: Number of files to fetch and process. Default: `undefined` (fetch and process all files)
-
-
-### Local directory
-
-Use the `--path` parameter to index all `.md` or `.mdx` files recursively from a local directory.
-
+**From an `llms.txt` file**:
 ```bash
-npx tsx --env-file=.env.local indexer/index.ts --path <directory>
+npx tsx --env-file=.env.local indexer/index.ts --url <link-to-llms.txt>
 ```
 
-----
+Available options:
+- `--delay <ms>`: delay between requests (default: 250ms)
+- `--max-files <n>`: maximum number of files to process
 
-The original Chat SDK Readme content is below with instructions on how to run the chatbot.
+## Changes made compared to the original fork
 
-----
+This section lists the changes I've personally made to the project (to be updated as development progresses):
 
-<!--
-<a href="https://chat.vercel.ai/">
-  <img alt="Next.js 14 and App Router-ready AI chatbot." src="app/(chat)/opengraph-image.png">
-  <h1 align="center">Chat SDK</h1>
-</a>
--->
+- [ ] Relaxed the system prompt to let the chatbot answer general questions in addition to document-based ones
+- [ ] Added support for additional document formats in the indexer (PDF, DOCX)
+- [ ] ...
 
-<p align="center">
-    Chat SDK is a free, open-source template built with Next.js and the AI SDK that helps you quickly build powerful chatbot applications.
-</p>
+## Deployment
 
-<p align="center">
-  <a href="https://chat-sdk.dev"><strong>Read Docs</strong></a> ·
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#model-providers"><strong>Model Providers</strong></a> ·
-  <a href="#deploy-your-own"><strong>Deploy Your Own</strong></a> ·
-  <a href="#running-locally"><strong>Running locally</strong></a>
-</p>
-<br/>
+The project is deployed on Vercel. Every push to the `main` branch triggers an automatic deployment.
 
-## Features
+## License
 
-- [Next.js](https://nextjs.org) App Router
-  - Advanced routing for seamless navigation and performance
-  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
-- [AI SDK](https://sdk.vercel.ai/docs)
-  - Unified API for generating text, structured objects, and tool calls with LLMs
-  - Hooks for building dynamic chat and generative user interfaces
-  - Supports xAI (default), OpenAI, Fireworks, and other model providers
-- [shadcn/ui](https://ui.shadcn.com)
-  - Styling with [Tailwind CSS](https://tailwindcss.com)
-  - Component primitives from [Radix UI](https://radix-ui.com) for accessibility and flexibility
-- Data Persistence
-  - [Neon Serverless Postgres](https://vercel.com/marketplace/neon) for saving chat history and user data
-  - [Vercel Blob](https://vercel.com/storage/blob) for efficient file storage
-- [Auth.js](https://authjs.dev)
-  - Simple and secure authentication
-
-## Model Providers
-
-This template ships with [xAI](https://x.ai) `grok-2-1212` as the default chat model. However, with the [AI SDK](https://sdk.vercel.ai/docs), you can switch LLM providers to [OpenAI](https://openai.com), [Anthropic](https://anthropic.com), [Cohere](https://cohere.com/), and [many more](https://sdk.vercel.ai/providers/ai-sdk-providers) with just a few lines of code.
-
-## Deploy Your Own
-
-You can deploy your own version of the Next.js AI Chatbot to Vercel with one click:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fai-chatbot&env=AUTH_SECRET&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https%3A%2F%2Fgithub.com%2Fvercel%2Fai-chatbot%2Fblob%2Fmain%2F.env.example&demo-title=AI+Chatbot&demo-description=An+Open-Source+AI+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&demo-url=https%3A%2F%2Fchat.vercel.ai&products=%5B%7B%22type%22%3A%22integration%22%2C%22protocol%22%3A%22ai%22%2C%22productSlug%22%3A%22grok%22%2C%22integrationSlug%22%3A%22xai%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22protocol%22%3A%22storage%22%2C%22productSlug%22%3A%22neon%22%2C%22integrationSlug%22%3A%22neon%22%7D%2C%7B%22type%22%3A%22integration%22%2C%22protocol%22%3A%22storage%22%2C%22productSlug%22%3A%22upstash-kv%22%2C%22integrationSlug%22%3A%22upstash%22%7D%2C%7B%22type%22%3A%22blob%22%7D%5D)
-
-## Running locally
-
-You will need to use the environment variables [defined in `.env.example`](.env.example) to run Next.js AI Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
-
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
-
-1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
-3. Download your environment variables: `vercel env pull`
-
-```bash
-pnpm install
-pnpm dev
-```
-
-Your app template should now be running on [localhost:3000](http://localhost:3000).
+This project inherits the license from the original repo (`vercel/chatbot`), see [LICENSE](./LICENSE).
