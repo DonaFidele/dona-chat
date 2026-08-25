@@ -1,8 +1,11 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import NextAuth from 'next-auth';
+import { NextResponse } from 'next/server';
+import { authConfig } from './app/(auth)/auth.config';
 import { guestRegex, isDevelopmentEnvironment } from './lib/constants';
 
-export async function middleware(request: NextRequest) {
+const { auth } = NextAuth(authConfig);
+
+export default auth((request) => {
   const { pathname } = request.nextUrl;
 
   /*
@@ -17,28 +20,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
-  });
+  const session = request.auth;
 
-  if (!token) {
+  if (!session) {
     const redirectUrl = encodeURIComponent(request.url);
-
     return NextResponse.redirect(
       new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
     );
   }
 
-  const isGuest = guestRegex.test(token?.email ?? '');
+  const isGuest = guestRegex.test(session.user?.email ?? '');
 
-  if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
+  if (session && !isGuest && ['/login', '/register'].includes(pathname)) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
@@ -47,7 +45,6 @@ export const config = {
     '/api/:path*',
     '/login',
     '/register',
-
     /*
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
