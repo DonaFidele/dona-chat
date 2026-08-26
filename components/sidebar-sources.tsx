@@ -22,6 +22,7 @@ const acceptedFileTypes =
   'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json,text/markdown,.md,.mdx';
 
 type Source = {
+  position: number;
   name: string;
   uploadedAt: string;
 };
@@ -33,7 +34,10 @@ type SourcesResponse = {
 export function SidebarSources() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const { data, mutate } = useSWR<SourcesResponse>('/api/sources', fetcher);
+  const visibleSources = showAll ? data?.sources : data?.sources.slice(0, 3);
+  const hiddenSourceCount = Math.max((data?.sources.length ?? 0) - 3, 0);
 
   useEffect(() => {
     const refreshSources = () => mutate();
@@ -117,7 +121,7 @@ export function SidebarSources() {
               Ajout de la source…
             </div>
           )}
-          {data?.sources.map((source) => (
+          {visibleSources?.map((source) => (
             <SidebarMenuItem key={`${source.name}-${source.uploadedAt}`}>
               <SidebarMenuButton
                 tooltip={source.name}
@@ -127,6 +131,7 @@ export function SidebarSources() {
                 <span className="flex min-w-0 flex-col items-start gap-0.5">
                   <span className="w-full truncate">{source.name}</span>
                   <span className="text-xs text-sidebar-foreground/50">
+                    #{source.position} ·{' '}
                     {format(new Date(source.uploadedAt), 'd MMM yyyy, HH:mm', {
                       locale: fr,
                     })}
@@ -139,6 +144,19 @@ export function SidebarSources() {
             <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
               Aucune source ajoutée.
             </div>
+          )}
+          {hiddenSourceCount > 0 && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                type="button"
+                className="justify-center text-xs text-sidebar-foreground/70"
+                onClick={() => setShowAll((value) => !value)}
+              >
+                {showAll
+                  ? 'Voir moins'
+                  : `Voir ${hiddenSourceCount} source${hiddenSourceCount > 1 ? 's' : ''} de plus`}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           )}
         </SidebarMenu>
       </SidebarGroupContent>

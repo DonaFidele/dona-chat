@@ -18,6 +18,7 @@ export function listKnowledgeFiles({ userId }: { userId: string }) {
       const resources = await getUploadedResourcesByUserId({ userId });
 
       const files = resources.map((resource) => ({
+        position: resources.indexOf(resource) + 1,
         name: getFileName(resource.sourceUri),
         uploadedAt: resource.createdAt.toISOString(),
       }));
@@ -25,6 +26,7 @@ export function listKnowledgeFiles({ userId }: { userId: string }) {
       return {
         resultType: 'knowledgeFileList',
         totalFiles: files.length,
+        ordering: 'newest upload first; position 1 is the most recent file',
         latestFile: files.at(0) ?? null,
         files,
       };

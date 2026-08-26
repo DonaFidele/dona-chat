@@ -19,7 +19,8 @@ export async function GET() {
   });
 
   return Response.json({
-    sources: resources.map((resource) => ({
+    sources: resources.map((resource, index) => ({
+      position: index + 1,
       name: getFileName(resource.sourceUri),
       uploadedAt: resource.createdAt,
     })),

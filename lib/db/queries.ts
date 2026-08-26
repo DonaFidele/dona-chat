@@ -48,15 +48,22 @@ const client = postgres(process.env.POSTGRES_URL!);
 const dbClient = drizzle(client);
 
 type DatabaseConnection = typeof dbClient;
-export type TransactionType = Parameters<Parameters<DatabaseConnection['transaction']>[0]>[0];
+export type TransactionType = Parameters<
+  Parameters<DatabaseConnection['transaction']>[0]
+>[0];
 
-export async function transaction<T>(callback: (tx: TransactionType) => Promise<T>) {
+export async function transaction<T>(
+  callback: (tx: TransactionType) => Promise<T>,
+) {
   return await dbClient.transaction(async (tx: TransactionType) => {
     return await callback(tx);
   });
 }
 
-export async function getUser(email: string, txn?: DatabaseConnection): Promise<Array<User>> {
+export async function getUser(
+  email: string,
+  txn?: DatabaseConnection,
+): Promise<Array<User>> {
   const db = txn || dbClient;
   try {
     return await db.select().from(user).where(eq(user.email, email));
@@ -68,7 +75,11 @@ export async function getUser(email: string, txn?: DatabaseConnection): Promise<
   }
 }
 
-export async function createUser(email: string, password: string, txn?: DatabaseConnection) {
+export async function createUser(
+  email: string,
+  password: string,
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   const hashedPassword = generateHashedPassword(password);
 
@@ -97,17 +108,20 @@ export async function createGuestUser(txn?: DatabaseConnection) {
   }
 }
 
-export async function saveChat({
-  id,
-  userId,
-  title,
-  visibility,
-}: {
-  id: string;
-  userId: string;
-  title: string;
-  visibility: VisibilityType;
-}, txn?: DatabaseConnection) {
+export async function saveChat(
+  {
+    id,
+    userId,
+    title,
+    visibility,
+  }: {
+    id: string;
+    userId: string;
+    title: string;
+    visibility: VisibilityType;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db.insert(chat).values({
@@ -122,7 +136,10 @@ export async function saveChat({
   }
 }
 
-export async function deleteChatById({ id }: { id: string }, txn?: DatabaseConnection) {
+export async function deleteChatById(
+  { id }: { id: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     await db.delete(vote).where(eq(vote.chatId, id));
@@ -142,17 +159,20 @@ export async function deleteChatById({ id }: { id: string }, txn?: DatabaseConne
   }
 }
 
-export async function getChatsByUserId({
-  id,
-  limit,
-  startingAfter,
-  endingBefore,
-}: {
-  id: string;
-  limit: number;
-  startingAfter: string | null;
-  endingBefore: string | null;
-}, txn?: DatabaseConnection) {
+export async function getChatsByUserId(
+  {
+    id,
+    limit,
+    startingAfter,
+    endingBefore,
+  }: {
+    id: string;
+    limit: number;
+    startingAfter: string | null;
+    endingBefore: string | null;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const extendedLimit = limit + 1;
@@ -219,7 +239,10 @@ export async function getChatsByUserId({
   }
 }
 
-export async function getChatById({ id }: { id: string }, txn?: DatabaseConnection) {
+export async function getChatById(
+  { id }: { id: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
@@ -229,11 +252,14 @@ export async function getChatById({ id }: { id: string }, txn?: DatabaseConnecti
   }
 }
 
-export async function saveMessages({
-  messages,
-}: {
-  messages: Array<DBMessage>;
-}, txn?: DatabaseConnection) {
+export async function saveMessages(
+  {
+    messages,
+  }: {
+    messages: Array<DBMessage>;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db.insert(message).values(messages);
@@ -242,7 +268,10 @@ export async function saveMessages({
   }
 }
 
-export async function getMessagesByChatId({ id }: { id: string }, txn?: DatabaseConnection) {
+export async function getMessagesByChatId(
+  { id }: { id: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db
@@ -258,15 +287,18 @@ export async function getMessagesByChatId({ id }: { id: string }, txn?: Database
   }
 }
 
-export async function voteMessage({
-  chatId,
-  messageId,
-  type,
-}: {
-  chatId: string;
-  messageId: string;
-  type: 'up' | 'down';
-}, txn?: DatabaseConnection) {
+export async function voteMessage(
+  {
+    chatId,
+    messageId,
+    type,
+  }: {
+    chatId: string;
+    messageId: string;
+    type: 'up' | 'down';
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const [existingVote] = await db
@@ -290,7 +322,10 @@ export async function voteMessage({
   }
 }
 
-export async function getVotesByChatId({ id }: { id: string }, txn?: DatabaseConnection) {
+export async function getVotesByChatId(
+  { id }: { id: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db.select().from(vote).where(eq(vote.chatId, id));
@@ -302,19 +337,22 @@ export async function getVotesByChatId({ id }: { id: string }, txn?: DatabaseCon
   }
 }
 
-export async function saveDocument({
-  id,
-  title,
-  kind,
-  content,
-  userId,
-}: {
-  id: string;
-  title: string;
-  kind: ArtifactKind;
-  content: string;
-  userId: string;
-}, txn?: DatabaseConnection) {
+export async function saveDocument(
+  {
+    id,
+    title,
+    kind,
+    content,
+    userId,
+  }: {
+    id: string;
+    title: string;
+    kind: ArtifactKind;
+    content: string;
+    userId: string;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db
@@ -333,7 +371,10 @@ export async function saveDocument({
   }
 }
 
-export async function getDocumentsById({ id }: { id: string }, txn?: DatabaseConnection) {
+export async function getDocumentsById(
+  { id }: { id: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const documents = await db
@@ -351,7 +392,10 @@ export async function getDocumentsById({ id }: { id: string }, txn?: DatabaseCon
   }
 }
 
-export async function getDocumentById({ id }: { id: string }, txn?: DatabaseConnection) {
+export async function getDocumentById(
+  { id }: { id: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const [selectedDocument] = await db
@@ -369,13 +413,16 @@ export async function getDocumentById({ id }: { id: string }, txn?: DatabaseConn
   }
 }
 
-export async function deleteDocumentsByIdAfterTimestamp({
-  id,
-  timestamp,
-}: {
-  id: string;
-  timestamp: Date;
-}, txn?: DatabaseConnection) {
+export async function deleteDocumentsByIdAfterTimestamp(
+  {
+    id,
+    timestamp,
+  }: {
+    id: string;
+    timestamp: Date;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     await db
@@ -399,11 +446,14 @@ export async function deleteDocumentsByIdAfterTimestamp({
   }
 }
 
-export async function saveSuggestions({
-  suggestions,
-}: {
-  suggestions: Array<Suggestion>;
-}, txn?: DatabaseConnection) {
+export async function saveSuggestions(
+  {
+    suggestions,
+  }: {
+    suggestions: Array<Suggestion>;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db.insert(suggestion).values(suggestions);
@@ -415,11 +465,14 @@ export async function saveSuggestions({
   }
 }
 
-export async function getSuggestionsByDocumentId({
-  documentId,
-}: {
-  documentId: string;
-}, txn?: DatabaseConnection) {
+export async function getSuggestionsByDocumentId(
+  {
+    documentId,
+  }: {
+    documentId: string;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db
@@ -434,7 +487,10 @@ export async function getSuggestionsByDocumentId({
   }
 }
 
-export async function getMessageById({ id }: { id: string }, txn?: DatabaseConnection) {
+export async function getMessageById(
+  { id }: { id: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db.select().from(message).where(eq(message.id, id));
@@ -446,13 +502,16 @@ export async function getMessageById({ id }: { id: string }, txn?: DatabaseConne
   }
 }
 
-export async function deleteMessagesByChatIdAfterTimestamp({
-  chatId,
-  timestamp,
-}: {
-  chatId: string;
-  timestamp: Date;
-}, txn?: DatabaseConnection) {
+export async function deleteMessagesByChatIdAfterTimestamp(
+  {
+    chatId,
+    timestamp,
+  }: {
+    chatId: string;
+    timestamp: Date;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const messagesToDelete = await db
@@ -485,13 +544,16 @@ export async function deleteMessagesByChatIdAfterTimestamp({
   }
 }
 
-export async function updateChatVisiblityById({
-  chatId,
-  visibility,
-}: {
-  chatId: string;
-  visibility: 'private' | 'public';
-}, txn?: DatabaseConnection) {
+export async function updateChatVisiblityById(
+  {
+    chatId,
+    visibility,
+  }: {
+    chatId: string;
+    visibility: 'private' | 'public';
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
@@ -503,10 +565,10 @@ export async function updateChatVisiblityById({
   }
 }
 
-export async function getMessageCountByUserId({
-  id,
-  differenceInHours,
-}: { id: string; differenceInHours: number }, txn?: DatabaseConnection) {
+export async function getMessageCountByUserId(
+  { id, differenceInHours }: { id: string; differenceInHours: number },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const twentyFourHoursAgo = new Date(
@@ -535,13 +597,16 @@ export async function getMessageCountByUserId({
   }
 }
 
-export async function createStreamId({
-  streamId,
-  chatId,
-}: {
-  streamId: string;
-  chatId: string;
-}, txn?: DatabaseConnection) {
+export async function createStreamId(
+  {
+    streamId,
+    chatId,
+  }: {
+    streamId: string;
+    chatId: string;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     await db
@@ -555,7 +620,10 @@ export async function createStreamId({
   }
 }
 
-export async function getStreamIdsByChatId({ chatId }: { chatId: string }, txn?: DatabaseConnection) {
+export async function getStreamIdsByChatId(
+  { chatId }: { chatId: string },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const streamIds = await db
@@ -575,15 +643,22 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }, txn?:
 }
 
 // Vector search functions for RAG
-export async function searchSimilarChunks({
-  embedding,
-  limit = 5,
-  threshold = 0.3, // baisse temporaire
-}: {
-  embedding: number[];
-  limit?: number;
-  threshold?: number;
-}, txn?: DatabaseConnection) {
+export async function searchSimilarChunks(
+  {
+    embedding,
+    limit = 5,
+    threshold = 0.3, // baisse temporaire
+    userId,
+    sourceName,
+  }: {
+    embedding: number[];
+    limit?: number;
+    threshold?: number;
+    userId?: string;
+    sourceName?: string;
+  },
+  txn?: DatabaseConnection,
+) {
   const db = txn || dbClient;
   try {
     const similarity = sql<number>`1 - (${cosineDistance(resourceChunk.embedding, embedding)})`;
@@ -601,10 +676,16 @@ export async function searchSimilarChunks({
       })
       .from(resourceChunk)
       .innerJoin(resource, eq(resourceChunk.resourceId, resource.id))
+      .where(
+        and(
+          userId
+            ? like(resource.sourceUri, `%/uploads/${userId}/%`)
+            : undefined,
+          sourceName ? like(resource.sourceUri, `%${sourceName}%`) : undefined,
+        ),
+      )
       .orderBy((t) => desc(t.similarity))
       .limit(limit);
-
-    console.log('Similarity scores:', results.map(r => r.similarity));
 
     return results.filter((r) => r.similarity > threshold);
   } catch (error) {

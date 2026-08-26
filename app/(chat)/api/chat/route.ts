@@ -167,7 +167,7 @@ export async function POST(request: Request) {
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
-            searchKnowledge,
+            searchKnowledge: searchKnowledge({ userId: session.user.id }),
             listKnowledgeFiles: listKnowledgeFiles({ userId: session.user.id }),
             getWeather,
             createDocument: createDocument({ session, dataStream }),
