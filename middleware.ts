@@ -1,6 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { guestRegex, isDevelopmentEnvironment } from './lib/constants';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -9,32 +7,9 @@ export async function middleware(request: NextRequest) {
     return new Response('pong', { status: 200 });
   }
 
-  if (pathname.startsWith('/api/auth')) {
-    return NextResponse.next();
-  }
-
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
-    salt: isDevelopmentEnvironment
-      ? 'authjs.session-token'
-      : '__Secure-authjs.session-token',
-  });
-
-  if (!token) {
-    const redirectUrl = encodeURIComponent(request.url);
-    return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
-    );
-  }
-
-  const isGuest = guestRegex.test(token?.email ?? '');
-
-  if (!isGuest && ['/login', '/register'].includes(pathname)) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
+  // Authentication is enforced in route handlers and server pages. Keeping this
+  // middleware free of Auth.js imports avoids loading Node-only dependencies in
+  // Vercel's Edge runtime.
   return NextResponse.next();
 }
 
