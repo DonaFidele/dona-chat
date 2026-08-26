@@ -577,7 +577,7 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }, txn?:
 export async function searchSimilarChunks({
   embedding,
   limit = 5,
-  threshold = 0.6,
+  threshold = 0.3, // baisse temporaire
 }: {
   embedding: number[];
   limit?: number;
@@ -586,7 +586,7 @@ export async function searchSimilarChunks({
   const db = txn || dbClient;
   try {
     const similarity = sql<number>`1 - (${cosineDistance(resourceChunk.embedding, embedding)})`;
-    
+
     const results = await db
       .select({
         chunkId: resourceChunk.id,
@@ -600,11 +600,12 @@ export async function searchSimilarChunks({
       })
       .from(resourceChunk)
       .innerJoin(resource, eq(resourceChunk.resourceId, resource.id))
-      .where(gt(similarity, threshold))
       .orderBy((t) => desc(t.similarity))
       .limit(limit);
 
-    return results;
+    console.log('Similarity scores:', results.map(r => r.similarity));
+
+    return results.filter((r) => r.similarity > threshold);
   } catch (error) {
     console.error('Vector search error:', error);
     throw new ChatSDKError(

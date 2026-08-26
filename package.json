@@ -71,7 +71,7 @@
     "next-themes": "^0.3.0",
     "orderedmap": "^2.1.1",
     "papaparse": "^5.5.2",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "postgres": "^3.4.4",
     "prosemirror-example-setup": "^1.2.3",
     "prosemirror-inputrules": "^1.4.0",
@@ -94,7 +94,6 @@
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "unpdf": "^1.8.1",
     "usehooks-ts": "^3.1.0",
     "zod": "^3.23.8"
   },

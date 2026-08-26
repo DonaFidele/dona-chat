@@ -4,6 +4,10 @@ import { embedMany } from 'ai';
 import { createHash } from 'node:crypto';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import mammoth from 'mammoth';
+// Import the parser directly: the package entry point runs its demo code when
+// bundled by Turbopack, which tries to read a non-existent test PDF.
+// @ts-expect-error: pdf-parse does not expose typings for this internal entry.
+import pdf from 'pdf-parse/lib/pdf-parse.js';
 import { myProvider } from '@/lib/ai/providers';
 import { upsertResourceWithChunks } from '@/lib/db/queries';
 
@@ -45,62 +49,6 @@ export function isKnowledgeFile(file: Pick<File, 'name' | 'type'>) {
   );
 }
 
-// async function extractText(file: File): Promise<string> {
-//   const buffer = Buffer.from(await file.arrayBuffer());
-
-//   if (
-//     file.type === 'application/pdf' ||
-//     file.name.toLowerCase().endsWith('.pdf')
-//   ) {
-//     const pdfModule = await import('pdf-parse');
-//     const pdfDefault = (pdfModule && (pdfModule as any).default) || pdfModule;
-
-//     // Case A: default export is a function (pdf-parse exposes a function)
-//     if (typeof pdfDefault === 'function') {
-//       const result = await (pdfDefault as any)(buffer);
-//       return result?.text ?? '';
-//     }
-
-//     // Case B: module exports a PDFParse class
-//     if ((pdfModule as any).PDFParse) {
-//       const Parser = (pdfModule as any).PDFParse;
-//       const parser = new Parser({ data: buffer });
-//       try {
-//         const result = await parser.getText();
-//         return result?.text ?? '';
-//       } finally {
-//         if (typeof parser.destroy === 'function') await parser.destroy();
-//       }
-//     }
-
-//     throw new Error('Unsupported pdf-parse export format');
-//   }
-
-//   if (
-//     file.type ===
-//       'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-//     file.name.toLowerCase().endsWith('.docx')
-//   ) {
-//     const result = await mammoth.extractRawText({ buffer });
-//     return result.value;
-//   }
-
-//   const text = buffer.toString('utf8');
-
-//   if (
-//     file.type === 'application/json' ||
-//     file.name.toLowerCase().endsWith('.json')
-//   ) {
-//     try {
-//       return JSON.stringify(JSON.parse(text), null, 2);
-//     } catch {
-//       throw new Error('The JSON file is invalid');
-//     }
-//   }
-
-//   return text;
-// }
-
 async function extractText(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -108,10 +56,8 @@ async function extractText(file: File): Promise<string> {
     file.type === 'application/pdf' ||
     file.name.toLowerCase().endsWith('.pdf')
   ) {
-    const { extractText: extractPdfText, getDocumentProxy } = await import('unpdf');
-    const pdf = await getDocumentProxy(new Uint8Array(buffer));
-    const { text } = await extractPdfText(pdf, { mergePages: true });
-    return text ?? '';
+    const result = await pdf(buffer);
+    return result.text;
   }
 
   if (
