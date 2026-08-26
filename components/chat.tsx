@@ -71,6 +71,7 @@ export function Chat({
       selectedVisibilityType: visibilityType,
     }),
     onFinish: () => {
+      window.history.replaceState({}, '', `/chat/${id}`);
       mutate(unstable_serialize(getChatHistoryPaginationKey));
     },
     onError: (error) => {
