@@ -28,6 +28,8 @@ import { ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
 
+type UploadedFile = Attachment & { indexed?: boolean };
+
 function PureMultimodalInput({
   chatId,
   input,
@@ -121,15 +123,9 @@ function PureMultimodalInput({
     if (width && width > 768) {
       textareaRef.current?.focus();
     }
-  }, [
-    attachments,
-    handleSubmit,
-    setAttachments,
-    setLocalStorageInput,
-    width,
-  ]);
+  }, [attachments, handleSubmit, setAttachments, setLocalStorageInput, width]);
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File): Promise<UploadedFile | undefined> => {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -147,6 +143,7 @@ function PureMultimodalInput({
           url,
           name: pathname,
           contentType: contentType,
+          indexed: data.indexed,
         };
       }
       const { error } = await response.json();
@@ -166,12 +163,22 @@ function PureMultimodalInput({
         const uploadPromises = files.map((file) => uploadFile(file));
         const uploadedAttachments = await Promise.all(uploadPromises);
         const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined,
+          (attachment): attachment is UploadedFile => attachment !== undefined,
         );
+
+        const indexedFiles = successfullyUploadedAttachments.filter(
+          (attachment) => attachment.indexed,
+        );
+
+        for (const attachment of indexedFiles) {
+          toast.success(`${attachment.name} was added to the knowledge base`);
+        }
 
         setAttachments((currentAttachments) => [
           ...currentAttachments,
-          ...successfullyUploadedAttachments,
+          ...successfullyUploadedAttachments.filter(
+            (attachment) => !attachment.indexed,
+          ),
         ]);
       } catch (error) {
         console.error('Error uploading files!', error);
@@ -229,6 +236,7 @@ function PureMultimodalInput({
 
       <input
         type="file"
+        accept="image/jpeg,image/png,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json,text/markdown,.md,.mdx"
         className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"
         ref={fileInputRef}
         multiple

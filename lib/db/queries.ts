@@ -613,3 +613,65 @@ export async function searchSimilarChunks({
     );
   }
 }
+
+export async function upsertResourceWithChunks({
+  sourceUri,
+  contentHash,
+  chunksWithEmbeddings,
+}: {
+  sourceUri: string;
+  contentHash: string;
+  chunksWithEmbeddings: Array<{ content: string; embedding: number[] }>;
+}) {
+  try {
+    await dbClient.transaction(async (tx) => {
+      const [existingResource] = await tx
+        .select()
+        .from(resource)
+        .where(eq(resource.sourceUri, sourceUri));
+
+      let resourceId = existingResource?.id;
+
+      if (resourceId) {
+        await tx
+          .delete(resourceChunk)
+          .where(eq(resourceChunk.resourceId, resourceId));
+        await tx
+          .update(resource)
+          .set({ contentHash, updatedAt: new Date() })
+          .where(eq(resource.id, resourceId));
+      } else {
+        const [createdResource] = await tx
+          .insert(resource)
+          .values({
+            sourceType: 'file',
+            sourceUri,
+            contentHash,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning({ id: resource.id });
+
+        if (!createdResource) {
+          throw new Error('Failed to create resource');
+        }
+
+        resourceId = createdResource.id;
+      }
+
+      await tx.insert(resourceChunk).values(
+        chunksWithEmbeddings.map((chunk) => ({
+          resourceId,
+          content: chunk.content,
+          embedding: chunk.embedding,
+        })),
+      );
+    });
+  } catch (error) {
+    console.error('Failed to index uploaded resource:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to index uploaded resource',
+    );
+  }
+}
