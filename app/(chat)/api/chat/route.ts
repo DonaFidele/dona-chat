@@ -24,6 +24,7 @@ import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { searchKnowledge } from '@/lib/ai/tools/search-knowledge';
+import { listKnowledgeFiles } from '@/lib/ai/tools/list-knowledge-files';
 import { isProductionEnvironment, useTelemetry } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -157,6 +158,7 @@ export async function POST(request: Request) {
               ? []
               : [
                   'searchKnowledge',
+                  'listKnowledgeFiles',
                   'getWeather',
                   'createDocument',
                   'updateDocument',
@@ -166,6 +168,7 @@ export async function POST(request: Request) {
           experimental_generateMessageId: generateUUID,
           tools: {
             searchKnowledge,
+            listKnowledgeFiles: listKnowledgeFiles({ userId: session.user.id }),
             getWeather,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),

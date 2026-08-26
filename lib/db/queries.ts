@@ -10,6 +10,7 @@ import {
   gt,
   gte,
   inArray,
+  like,
   lt,
   type SQL,
   sql,
@@ -611,6 +612,32 @@ export async function searchSimilarChunks({
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to search similar chunks',
+    );
+  }
+}
+
+export async function getUploadedResourcesByUserId({
+  userId,
+  limit = 50,
+}: {
+  userId: string;
+  limit?: number;
+}) {
+  try {
+    return await dbClient
+      .select({
+        sourceUri: resource.sourceUri,
+        createdAt: resource.createdAt,
+      })
+      .from(resource)
+      .where(like(resource.sourceUri, `%/uploads/${userId}/%`))
+      .orderBy(desc(resource.createdAt))
+      .limit(limit);
+  } catch (error) {
+    console.error('Failed to get uploaded resources:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get uploaded resources',
     );
   }
 }
