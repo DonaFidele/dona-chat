@@ -66,7 +66,13 @@ async function extractText(file: File): Promise<string> {
     file.name.toLowerCase().endsWith('.docx')
   ) {
     const result = await mammoth.extractRawText({ buffer });
-    return result.value;
+
+    if (result.value.trim()) {
+      return result.value;
+    }
+
+    const htmlResult = await mammoth.convertToHtml({ buffer });
+    return htmlResult.value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
   }
 
   const text = buffer.toString('utf8');

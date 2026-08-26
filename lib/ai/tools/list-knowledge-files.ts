@@ -12,17 +12,21 @@ function getFileName(sourceUri: string) {
 export function listKnowledgeFiles({ userId }: { userId: string }) {
   return tool({
     description:
-      'List the documents uploaded by the current user to the knowledge base, including their file names and upload dates. Use this when the user asks which files or documents they uploaded.',
+      'List every document uploaded by the current user to the knowledge base, including file names and upload dates. Use this for any question about uploaded files, including which files exist and which one was uploaded most recently.',
     parameters: z.object({}),
     execute: async () => {
       const resources = await getUploadedResourcesByUserId({ userId });
 
+      const files = resources.map((resource) => ({
+        name: getFileName(resource.sourceUri),
+        uploadedAt: resource.createdAt.toISOString(),
+      }));
+
       return {
         resultType: 'knowledgeFileList',
-        files: resources.map((resource) => ({
-          name: getFileName(resource.sourceUri),
-          uploadedAt: resource.createdAt.toISOString(),
-        })),
+        totalFiles: files.length,
+        latestFile: files.at(0) ?? null,
+        files,
       };
     },
   });

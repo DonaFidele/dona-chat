@@ -618,7 +618,7 @@ export async function searchSimilarChunks({
 
 export async function getUploadedResourcesByUserId({
   userId,
-  limit = 50,
+  limit = 100,
 }: {
   userId: string;
   limit?: number;

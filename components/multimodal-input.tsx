@@ -179,6 +179,10 @@ function PureMultimodalInput({
           toast.success(`${attachment.name} was added to the knowledge base`);
         }
 
+        if (indexedFiles.length > 0) {
+          window.dispatchEvent(new Event('sources-updated'));
+        }
+
         setAttachments((currentAttachments) => [
           ...currentAttachments,
           ...successfullyUploadedAttachments.filter(

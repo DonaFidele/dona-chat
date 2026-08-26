@@ -1,0 +1,147 @@
+'use client';
+
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { FileIcon, PlusIcon } from './icons';
+import { Button } from './ui/button';
+import {
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from './ui/sidebar';
+import { useEffect, useRef, useState } from 'react';
+import useSWR from 'swr';
+import { fetcher } from '@/lib/utils';
+import { toast } from 'sonner';
+
+const acceptedFileTypes =
+  'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json,text/markdown,.md,.mdx';
+
+type Source = {
+  name: string;
+  uploadedAt: string;
+};
+
+type SourcesResponse = {
+  sources: Array<Source>;
+};
+
+export function SidebarSources() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const { data, mutate } = useSWR<SourcesResponse>('/api/sources', fetcher);
+
+  useEffect(() => {
+    const refreshSources = () => mutate();
+    window.addEventListener('sources-updated', refreshSources);
+
+    return () => window.removeEventListener('sources-updated', refreshSources);
+  }, [mutate]);
+
+  const uploadSource = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/files/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error ?? `Upload failed (HTTP ${response.status})`,
+      );
+    }
+
+    return result;
+  };
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      await uploadSource(file);
+      await mutate();
+      window.dispatchEvent(new Event('sources-updated'));
+      toast.success(`${file.name} a été ajouté aux sources`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "L'ajout de la source a échoué",
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>Sources</SidebarGroupLabel>
+      <SidebarGroupAction asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6"
+          disabled={isUploading}
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Ajouter une source"
+        >
+          <PlusIcon size={14} />
+        </Button>
+      </SidebarGroupAction>
+      <SidebarGroupContent>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptedFileTypes}
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <SidebarMenu>
+          {isUploading && (
+            <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
+              Ajout de la source…
+            </div>
+          )}
+          {data?.sources.map((source) => (
+            <SidebarMenuItem key={`${source.name}-${source.uploadedAt}`}>
+              <SidebarMenuButton
+                tooltip={source.name}
+                className="h-auto py-1.5"
+              >
+                <FileIcon size={14} />
+                <span className="flex min-w-0 flex-col items-start gap-0.5">
+                  <span className="w-full truncate">{source.name}</span>
+                  <span className="text-xs text-sidebar-foreground/50">
+                    {format(new Date(source.uploadedAt), 'd MMM yyyy, HH:mm', {
+                      locale: fr,
+                    })}
+                  </span>
+                </span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+          {data?.sources.length === 0 && !isUploading && (
+            <div className="px-2 py-1 text-xs text-sidebar-foreground/50">
+              Aucune source ajoutée.
+            </div>
+          )}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
