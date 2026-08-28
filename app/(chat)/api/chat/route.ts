@@ -243,6 +243,15 @@ export async function POST(request: Request) {
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
+
+    // Anything that is not a ChatSDKError previously fell through here and the
+    // handler returned undefined, so Next.js raised "No response is returned
+    // from route handler" and the client saw an opaque 500 with no clue what
+    // went wrong (an AI Gateway 429 surfaced this way). Log the real cause and
+    // always return a Response.
+    console.error('Unhandled error in POST /api/chat:', error);
+
+    return new ChatSDKError('offline:chat').toResponse();
   }
 }
 
