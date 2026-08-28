@@ -43,5 +43,15 @@ yarn-error.log*
 /playwright/*
 tsconfig.tsbuildinfo
 
+<<<<<<< HEAD
 .agents
 .codex
+=======
+# Next.js auto-generated agent instructions
+AGENTS.md
+CLAUDE.md
+
+# local deploy helper
+deploy-temp.sh
+share-fix.sh
+>>>>>>> 541993c7c2922fcbcefb72d55a9f5deb3078004e
