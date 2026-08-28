@@ -3,7 +3,13 @@ import { z } from 'zod';
 import { searchSimilarChunks } from '@/lib/db/queries';
 import { myProvider } from '../providers';
 
-export function searchKnowledge({ userId }: { userId: string }) {
+export function searchKnowledge({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId?: string | null;
+}) {
   return tool({
     description:
       "Search the current user's uploaded knowledge-base documents for information. Use sourceName to restrict the search to one specific uploaded file when the user names or selects a file.",
@@ -30,6 +36,7 @@ export function searchKnowledge({ userId }: { userId: string }) {
           limit: 10,
           userId,
           sourceName,
+          subjectId: subjectId ?? undefined,
         });
 
         if (results.length === 0) {

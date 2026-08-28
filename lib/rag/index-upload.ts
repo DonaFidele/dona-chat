@@ -94,9 +94,11 @@ async function extractText(file: File): Promise<string> {
 export async function indexUploadedFile({
   file,
   sourceUri,
+  subjectId,
 }: {
   file: File;
   sourceUri: string;
+  subjectId?: string;
 }) {
   const content = (await extractText(file)).trim();
 
@@ -117,6 +119,7 @@ export async function indexUploadedFile({
 
   await upsertResourceWithChunks({
     sourceUri,
+    subjectId,
     contentHash: createHash('sha256').update(content).digest('hex'),
     chunksWithEmbeddings: chunks.map((chunk, index) => ({
       content: chunk,

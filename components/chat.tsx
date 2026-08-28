@@ -20,6 +20,7 @@ import { useSearchParams } from 'next/navigation';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
+import { getActiveSubjectId } from '@/lib/study-subject';
 
 export function Chat({
   id,
@@ -69,6 +70,7 @@ export function Chat({
       message: body.messages.at(-1),
       selectedChatModel: initialChatModel,
       selectedVisibilityType: visibilityType,
+      selectedSubjectId: getActiveSubjectId(),
     }),
     onFinish: () => {
       window.history.replaceState({}, '', `/chat/${id}`);

@@ -27,6 +27,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
+import { getActiveSubjectId } from '@/lib/study-subject';
 
 type UploadedFile = Attachment & { indexed?: boolean };
 
@@ -128,6 +129,8 @@ function PureMultimodalInput({
   const uploadFile = async (file: File): Promise<UploadedFile | undefined> => {
     const formData = new FormData();
     formData.append('file', file);
+    const subjectId = getActiveSubjectId();
+    if (subjectId) formData.append('subjectId', subjectId);
 
     try {
       const response = await fetch('/api/files/upload', {

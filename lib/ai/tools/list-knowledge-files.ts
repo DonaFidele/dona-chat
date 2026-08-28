@@ -9,13 +9,22 @@ function getFileName(sourceUri: string) {
   return decodeURIComponent(fileName);
 }
 
-export function listKnowledgeFiles({ userId }: { userId: string }) {
+export function listKnowledgeFiles({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId?: string | null;
+}) {
   return tool({
     description:
       'List every document uploaded by the current user to the knowledge base, including file names and upload dates. Use this for any question about uploaded files, including which files exist and which one was uploaded most recently.',
     parameters: z.object({}),
     execute: async () => {
-      const resources = await getUploadedResourcesByUserId({ userId });
+      const resources = await getUploadedResourcesByUserId({
+        userId,
+        subjectId: subjectId ?? undefined,
+      });
 
       const files = resources.map((resource) => ({
         position: resources.indexOf(resource) + 1,

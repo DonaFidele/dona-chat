@@ -21,6 +21,18 @@ export const user = pgTable('User', {
 
 export type User = InferSelectModel<typeof user>;
 
+export const subject = pgTable('Subject', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  name: varchar('name', { length: 100 }).notNull(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+});
+
+export type Subject = InferSelectModel<typeof subject>;
+
 export const chat = pgTable('Chat', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   createdAt: timestamp('createdAt').notNull(),
@@ -28,6 +40,9 @@ export const chat = pgTable('Chat', {
   userId: uuid('userId')
     .notNull()
     .references(() => user.id),
+  subjectId: uuid('subject_id').references(() => subject.id, {
+    onDelete: 'set null',
+  }),
   visibility: varchar('visibility', { enum: ['public', 'private'] })
     .notNull()
     .default('private'),
@@ -177,6 +192,9 @@ export const resource = pgTable('Resource', {
   sourceType: varchar('source_type', { length: 50 }).notNull(), // 'file', 'url', 'github'
   sourceUri: text('source_uri').notNull().unique(), // file path, URL, or repo identifier
   contentHash: text('content_hash').notNull(), // SHA256 hash of content
+  subjectId: uuid('subject_id').references(() => subject.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
@@ -195,7 +213,10 @@ export const resourceChunk = pgTable(
   },
   (table) => ({
     // Create HNSW index for efficient vector similarity search using cosine distance
-    embeddingIndex: index('embedding_index').using('hnsw', table.embedding.op('vector_cosine_ops')),
+    embeddingIndex: index('embedding_index').using(
+      'hnsw',
+      table.embedding.op('vector_cosine_ops'),
+    ),
   }),
 );
 

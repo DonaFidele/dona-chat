@@ -30,6 +30,7 @@ import {
   type DBMessage,
   type Chat,
   stream,
+  subject,
   resource,
   resourceChunk,
 } from './schema';
@@ -114,11 +115,13 @@ export async function saveChat(
     userId,
     title,
     visibility,
+    subjectId,
   }: {
     id: string;
     userId: string;
     title: string;
     visibility: VisibilityType;
+    subjectId?: string | null;
   },
   txn?: DatabaseConnection,
 ) {
@@ -130,9 +133,70 @@ export async function saveChat(
       userId,
       title,
       visibility,
+      subjectId,
     });
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to save chat');
+  }
+}
+
+export async function createSubject({
+  name,
+  userId,
+}: {
+  name: string;
+  userId: string;
+}) {
+  try {
+    const [createdSubject] = await dbClient
+      .insert(subject)
+      .values({ name, userId, createdAt: new Date(), updatedAt: new Date() })
+      .returning();
+
+    return createdSubject;
+  } catch (error) {
+    console.error('Failed to create subject:', error);
+    throw new ChatSDKError('bad_request:database', 'Failed to create subject');
+  }
+}
+
+export async function getSubjectById({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}) {
+  try {
+    const [selectedSubject] = await dbClient
+      .select()
+      .from(subject)
+      .where(and(eq(subject.id, id), eq(subject.userId, userId)));
+
+    return selectedSubject;
+  } catch (error) {
+    console.error('Failed to get subject:', error);
+    throw new ChatSDKError('bad_request:database', 'Failed to get subject');
+  }
+}
+
+export async function getSubjectsByUserId({ userId }: { userId: string }) {
+  try {
+    return await dbClient
+      .select({
+        id: subject.id,
+        name: subject.name,
+        createdAt: subject.createdAt,
+        documentCount: count(resource.id),
+      })
+      .from(subject)
+      .leftJoin(resource, eq(resource.subjectId, subject.id))
+      .where(eq(subject.userId, userId))
+      .groupBy(subject.id)
+      .orderBy(asc(subject.createdAt));
+  } catch (error) {
+    console.error('Failed to get subjects:', error);
+    throw new ChatSDKError('bad_request:database', 'Failed to get subjects');
   }
 }
 
@@ -650,12 +714,14 @@ export async function searchSimilarChunks(
     threshold = 0.3, // baisse temporaire
     userId,
     sourceName,
+    subjectId,
   }: {
     embedding: number[];
     limit?: number;
     threshold?: number;
     userId?: string;
     sourceName?: string;
+    subjectId?: string;
   },
   txn?: DatabaseConnection,
 ) {
@@ -682,6 +748,7 @@ export async function searchSimilarChunks(
             ? like(resource.sourceUri, `%/uploads/${userId}/%`)
             : undefined,
           sourceName ? like(resource.sourceUri, `%${sourceName}%`) : undefined,
+          subjectId ? eq(resource.subjectId, subjectId) : undefined,
         ),
       )
       .orderBy((t) => desc(t.similarity))
@@ -700,9 +767,11 @@ export async function searchSimilarChunks(
 export async function getUploadedResourcesByUserId({
   userId,
   limit = 100,
+  subjectId,
 }: {
   userId: string;
   limit?: number;
+  subjectId?: string;
 }) {
   try {
     return await dbClient
@@ -711,7 +780,12 @@ export async function getUploadedResourcesByUserId({
         createdAt: resource.createdAt,
       })
       .from(resource)
-      .where(like(resource.sourceUri, `%/uploads/${userId}/%`))
+      .where(
+        and(
+          like(resource.sourceUri, `%/uploads/${userId}/%`),
+          subjectId ? eq(resource.subjectId, subjectId) : undefined,
+        ),
+      )
       .orderBy(desc(resource.createdAt))
       .limit(limit);
   } catch (error) {
@@ -727,10 +801,12 @@ export async function upsertResourceWithChunks({
   sourceUri,
   contentHash,
   chunksWithEmbeddings,
+  subjectId,
 }: {
   sourceUri: string;
   contentHash: string;
   chunksWithEmbeddings: Array<{ content: string; embedding: number[] }>;
+  subjectId?: string;
 }) {
   try {
     await dbClient.transaction(async (tx) => {
@@ -747,7 +823,7 @@ export async function upsertResourceWithChunks({
           .where(eq(resourceChunk.resourceId, resourceId));
         await tx
           .update(resource)
-          .set({ contentHash, updatedAt: new Date() })
+          .set({ contentHash, subjectId, updatedAt: new Date() })
           .where(eq(resource.id, resourceId));
       } else {
         const [createdResource] = await tx
@@ -756,6 +832,7 @@ export async function upsertResourceWithChunks({
             sourceType: 'file',
             sourceUri,
             contentHash,
+            subjectId,
             createdAt: new Date(),
             updatedAt: new Date(),
           })

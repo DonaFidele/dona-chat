@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { auth } from '@/app/(auth)/auth';
+import { getSubjectById } from '@/lib/db/queries';
 import {
   CHAT_IMAGE_TYPES,
   isKnowledgeFile,
@@ -43,9 +44,28 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const subjectId = formData.get('subjectId');
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
+
+    if (subjectId !== null && typeof subjectId !== 'string') {
+      return NextResponse.json({ error: 'Invalid subject' }, { status: 400 });
+    }
+
+    if (subjectId) {
+      const selectedSubject = await getSubjectById({
+        id: subjectId,
+        userId: session.user.id,
+      });
+
+      if (!selectedSubject) {
+        return NextResponse.json(
+          { error: 'Subject not found' },
+          { status: 404 },
+        );
+      }
     }
 
     const validatedFile = FileSchema.safeParse({ file });
@@ -76,6 +96,7 @@ export async function POST(request: Request) {
         const result = await indexUploadedFile({
           file,
           sourceUri: data.url,
+          subjectId: subjectId || undefined,
         });
 
         return NextResponse.json({ ...data, indexed, chunks: result.chunks });

@@ -64,16 +64,21 @@ About the origin of user's request:
 export const systemPrompt = ({
   selectedChatModel,
   requestHints,
+  subjectName,
 }: {
   selectedChatModel: string;
   requestHints: RequestHints;
+  subjectName?: string | null;
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
+  const subjectPrompt = subjectName
+    ? `This conversation is scoped to the study subject “${subjectName}”. Search and list only documents assigned to this subject.\n`
+    : 'This conversation is not scoped to a study subject; search across the user’s uploaded documents.\n';
 
   if (selectedChatModel === 'chat-model-reasoning') {
-    return `${regularPrompt}\n\n${requestPrompt}`;
+    return `${regularPrompt}\n\n${subjectPrompt}\n${requestPrompt}`;
   } else {
-    return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+    return `${regularPrompt}\n\n${subjectPrompt}\n${requestPrompt}\n\n${artifactsPrompt}`;
   }
 };
 

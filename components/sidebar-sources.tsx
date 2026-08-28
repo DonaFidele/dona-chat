@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getActiveSubjectId, SUBJECT_CHANGED_EVENT } from '@/lib/study-subject';
 
 const acceptedFileTypes =
   'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json,text/markdown,.md,.mdx';
@@ -35,7 +36,11 @@ export function SidebarSources() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const { data, mutate } = useSWR<SourcesResponse>('/api/sources', fetcher);
+  const [subjectId, setSubjectId] = useState<string | null>(null);
+  const sourcesUrl = subjectId
+    ? `/api/sources?subjectId=${encodeURIComponent(subjectId)}`
+    : '/api/sources';
+  const { data, mutate } = useSWR<SourcesResponse>(sourcesUrl, fetcher);
   const visibleSources = showAll ? data?.sources : data?.sources.slice(0, 3);
   const hiddenSourceCount = Math.max((data?.sources.length ?? 0) - 3, 0);
 
@@ -46,9 +51,22 @@ export function SidebarSources() {
     return () => window.removeEventListener('sources-updated', refreshSources);
   }, [mutate]);
 
+  useEffect(() => {
+    const refreshSubject = () => {
+      setSubjectId(getActiveSubjectId());
+      setShowAll(false);
+    };
+    refreshSubject();
+    window.addEventListener(SUBJECT_CHANGED_EVENT, refreshSubject);
+
+    return () =>
+      window.removeEventListener(SUBJECT_CHANGED_EVENT, refreshSubject);
+  }, []);
+
   const uploadSource = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (subjectId) formData.append('subjectId', subjectId);
 
     const response = await fetch('/api/files/upload', {
       method: 'POST',

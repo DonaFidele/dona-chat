@@ -14,6 +14,7 @@ import {
   getMessageCountByUserId,
   getMessagesByChatId,
   getStreamIdsByChatId,
+  getSubjectById,
   saveChat,
   saveMessages,
 } from '@/lib/db/queries';
@@ -74,8 +75,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { id, message, selectedChatModel, selectedVisibilityType } =
-      requestBody;
+    const {
+      id,
+      message,
+      selectedChatModel,
+      selectedVisibilityType,
+      selectedSubjectId,
+    } = requestBody;
 
     const session = await auth();
 
@@ -95,8 +101,24 @@ export async function POST(request: Request) {
     }
 
     const chat = await getChatById({ id });
+    let subjectId: string | null = null;
+    let subjectName: string | null = null;
 
     if (!chat) {
+      if (selectedSubjectId) {
+        const selectedSubject = await getSubjectById({
+          id: selectedSubjectId,
+          userId: session.user.id,
+        });
+
+        if (!selectedSubject) {
+          return new ChatSDKError('forbidden:chat').toResponse();
+        }
+
+        subjectId = selectedSubject.id;
+        subjectName = selectedSubject.name;
+      }
+
       const title = await generateTitleFromUserMessage({
         message,
       });
@@ -106,10 +128,20 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title,
         visibility: selectedVisibilityType,
+        subjectId,
       });
     } else {
       if (chat.userId !== session.user.id) {
         return new ChatSDKError('forbidden:chat').toResponse();
+      }
+
+      subjectId = chat.subjectId;
+      if (subjectId) {
+        const selectedSubject = await getSubjectById({
+          id: subjectId,
+          userId: session.user.id,
+        });
+        subjectName = selectedSubject?.name ?? null;
       }
     }
 
@@ -150,7 +182,11 @@ export async function POST(request: Request) {
       execute: (dataStream) => {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
+          system: systemPrompt({
+            selectedChatModel,
+            requestHints,
+            subjectName,
+          }),
           messages,
           maxSteps: 5,
           experimental_activeTools:
@@ -167,8 +203,14 @@ export async function POST(request: Request) {
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {
-            searchKnowledge: searchKnowledge({ userId: session.user.id }),
-            listKnowledgeFiles: listKnowledgeFiles({ userId: session.user.id }),
+            searchKnowledge: searchKnowledge({
+              userId: session.user.id,
+              subjectId,
+            }),
+            listKnowledgeFiles: listKnowledgeFiles({
+              userId: session.user.id,
+              subjectId,
+            }),
             getWeather,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
