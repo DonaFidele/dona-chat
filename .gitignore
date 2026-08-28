@@ -42,3 +42,6 @@ yarn-error.log*
 /blob-report/
 /playwright/*
 tsconfig.tsbuildinfo
+
+.agents
+.codex
