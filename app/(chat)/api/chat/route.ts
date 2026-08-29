@@ -26,6 +26,7 @@ import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
 import { searchKnowledge } from '@/lib/ai/tools/search-knowledge';
 import { listKnowledgeFiles } from '@/lib/ai/tools/list-knowledge-files';
+import { createStudySheet } from '@/lib/ai/tools/create-study-sheet';
 import { isProductionEnvironment, useTelemetry } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -195,6 +196,7 @@ export async function POST(request: Request) {
               : [
                   'searchKnowledge',
                   'listKnowledgeFiles',
+                  'createStudySheet',
                   'getWeather',
                   'createDocument',
                   'updateDocument',
@@ -210,6 +212,12 @@ export async function POST(request: Request) {
             listKnowledgeFiles: listKnowledgeFiles({
               userId: session.user.id,
               subjectId,
+            }),
+            createStudySheet: createStudySheet({
+              session,
+              dataStream,
+              subjectId,
+              subjectName,
             }),
             getWeather,
             createDocument: createDocument({ session, dataStream }),

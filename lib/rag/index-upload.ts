@@ -32,7 +32,7 @@ const KNOWLEDGE_FILE_EXTENSIONS = [
   '.mdx',
 ];
 
-export const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+export const MAX_UPLOAD_SIZE = 20 * 1024 * 1024;
 
 export function isKnowledgeFileType(type: string) {
   return KNOWLEDGE_FILE_TYPES.includes(
@@ -56,8 +56,24 @@ async function extractText(file: File): Promise<string> {
     file.type === 'application/pdf' ||
     file.name.toLowerCase().endsWith('.pdf')
   ) {
-    const result = await pdf(buffer);
-    return result.text;
+    try {
+      const result = await pdf(buffer);
+      return result.text;
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : '';
+
+      if (
+        message.includes('xref') ||
+        message.includes('command token too long') ||
+        message.includes('illegal character')
+      ) {
+        throw new Error(
+          'This PDF is malformed and cannot be read. Open it, then export or print it again as a new PDF before uploading it.',
+        );
+      }
+
+      throw error;
+    }
   }
 
   if (
@@ -107,15 +123,21 @@ export async function indexUploadedFile({
   }
 
   const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1000,
-    chunkOverlap: 200,
+    chunkSize: 1200,
+    chunkOverlap: 250,
   });
   const chunks = await splitter.splitText(content);
 
-  const { embeddings } = await embedMany({
-    model: myProvider.textEmbeddingModel('embedding-model'),
-    values: chunks,
-  });
+  const embeddings: Array<number[]> = [];
+  const embeddingBatchSize = 100;
+
+  for (let index = 0; index < chunks.length; index += embeddingBatchSize) {
+    const { embeddings: batchEmbeddings } = await embedMany({
+      model: myProvider.textEmbeddingModel('embedding-model'),
+      values: chunks.slice(index, index + embeddingBatchSize),
+    });
+    embeddings.push(...batchEmbeddings);
+  }
 
   await upsertResourceWithChunks({
     sourceUri,

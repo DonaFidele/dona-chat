@@ -71,6 +71,13 @@
       "when": 1787953006139,
       "tag": "0009_plain_wolf_cub",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787962172142,
+      "tag": "0010_illegal_professor_monster",
+      "breakpoints": true
     }
   ]
 }

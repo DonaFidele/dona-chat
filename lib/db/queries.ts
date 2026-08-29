@@ -182,7 +182,7 @@ export async function getSubjectById({
 
 export async function getSubjectsByUserId({ userId }: { userId: string }) {
   try {
-    return await dbClient
+    const subjects = await dbClient
       .select({
         id: subject.id,
         name: subject.name,
@@ -194,6 +194,19 @@ export async function getSubjectsByUserId({ userId }: { userId: string }) {
       .where(eq(subject.userId, userId))
       .groupBy(subject.id)
       .orderBy(asc(subject.createdAt));
+
+    return await Promise.all(
+      subjects.map(async (item) => {
+        const [latestChat] = await dbClient
+          .select({ id: chat.id })
+          .from(chat)
+          .where(and(eq(chat.userId, userId), eq(chat.subjectId, item.id)))
+          .orderBy(desc(chat.createdAt))
+          .limit(1);
+
+        return { ...item, latestChatId: latestChat?.id ?? null };
+      }),
+    );
   } catch (error) {
     console.error('Failed to get subjects:', error);
     throw new ChatSDKError('bad_request:database', 'Failed to get subjects');
@@ -408,12 +421,14 @@ export async function saveDocument(
     kind,
     content,
     userId,
+    subjectId,
   }: {
     id: string;
     title: string;
     kind: ArtifactKind;
     content: string;
     userId: string;
+    subjectId?: string | null;
   },
   txn?: DatabaseConnection,
 ) {
@@ -427,11 +442,40 @@ export async function saveDocument(
         kind,
         content,
         userId,
+        subjectId,
         createdAt: new Date(),
       })
       .returning();
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to save document');
+  }
+}
+
+export async function getReviewSheetsBySubject({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  try {
+    return await dbClient
+      .select({
+        id: document.id,
+        title: document.title,
+        createdAt: document.createdAt,
+      })
+      .from(document)
+      .where(
+        and(eq(document.userId, userId), eq(document.subjectId, subjectId)),
+      )
+      .orderBy(desc(document.createdAt));
+  } catch (error) {
+    console.error('Failed to get review sheets:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get review sheets',
+    );
   }
 }
 
@@ -710,7 +754,7 @@ export async function getStreamIdsByChatId(
 export async function searchSimilarChunks(
   {
     embedding,
-    limit = 5,
+    limit = 20,
     threshold = 0.3, // baisse temporaire
     userId,
     sourceName,
@@ -766,7 +810,7 @@ export async function searchSimilarChunks(
 
 export async function getUploadedResourcesByUserId({
   userId,
-  limit = 100,
+  limit = 500,
   subjectId,
 }: {
   userId: string;
@@ -776,6 +820,7 @@ export async function getUploadedResourcesByUserId({
   try {
     return await dbClient
       .select({
+        id: resource.id,
         sourceUri: resource.sourceUri,
         createdAt: resource.createdAt,
       })
@@ -793,6 +838,38 @@ export async function getUploadedResourcesByUserId({
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get uploaded resources',
+    );
+  }
+}
+
+export async function removeResourceFromSubject({
+  resourceId,
+  subjectId,
+  userId,
+}: {
+  resourceId: string;
+  subjectId: string;
+  userId: string;
+}) {
+  try {
+    const [updatedResource] = await dbClient
+      .update(resource)
+      .set({ subjectId: null, updatedAt: new Date() })
+      .where(
+        and(
+          eq(resource.id, resourceId),
+          eq(resource.subjectId, subjectId),
+          like(resource.sourceUri, `%/uploads/${userId}/%`),
+        ),
+      )
+      .returning({ id: resource.id });
+
+    return updatedResource;
+  } catch (error) {
+    console.error('Failed to remove resource from subject:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to remove resource from subject',
     );
   }
 }

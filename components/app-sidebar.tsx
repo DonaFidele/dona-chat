@@ -7,6 +7,7 @@ import { PlusIcon } from '@/components/icons';
 import { SidebarHistory } from '@/components/sidebar-history';
 import { SidebarSources } from '@/components/sidebar-sources';
 import { SidebarSubjects } from '@/components/sidebar-subjects';
+import { SidebarReviewSheets } from '@/components/sidebar-review-sheets';
 import { SidebarUserNav } from '@/components/sidebar-user-nav';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +64,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <SidebarContent>
         {user && <SidebarSubjects />}
         {user && <SidebarSources />}
+        {user && <SidebarReviewSheets />}
         <SidebarHistory user={user} />
       </SidebarContent>
       <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
