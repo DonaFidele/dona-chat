@@ -772,6 +772,7 @@ export async function searchSimilarChunks(
   const db = txn || dbClient;
   try {
     const similarity = sql<number>`1 - (${cosineDistance(resourceChunk.embedding, embedding)})`;
+    const candidateLimit = sourceName ? limit : limit * 4;
 
     const results = await db
       .select({
@@ -796,9 +797,20 @@ export async function searchSimilarChunks(
         ),
       )
       .orderBy((t) => desc(t.similarity))
-      .limit(limit);
+      .limit(candidateLimit);
 
-    return results.filter((r) => r.similarity > threshold);
+    const chunksPerSource = new Map<string, number>();
+
+    return results
+      .filter((result) => result.similarity > threshold)
+      .filter((result) => {
+        const count = chunksPerSource.get(result.resourceUri) ?? 0;
+        if (count >= 3) return false;
+
+        chunksPerSource.set(result.resourceUri, count + 1);
+        return true;
+      })
+      .slice(0, limit);
   } catch (error) {
     console.error('Vector search error:', error);
     throw new ChatSDKError(

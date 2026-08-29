@@ -61,7 +61,7 @@ export function Chat({
   } = useChat({
     id,
     initialMessages,
-    experimental_throttle: 100,
+    experimental_throttle: 30,
     sendExtraMessageFields: true,
     generateId: generateUUID,
     fetch: fetchWithErrorHandlers,
@@ -74,6 +74,7 @@ export function Chat({
     }),
     onFinish: () => {
       window.history.replaceState({}, '', `/chat/${id}`);
+      window.dispatchEvent(new Event('subjects-updated'));
       mutate(unstable_serialize(getChatHistoryPaginationKey));
     },
     onError: (error) => {

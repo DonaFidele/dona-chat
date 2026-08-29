@@ -43,13 +43,29 @@ const PurePreviewMessage = ({
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   // Extract search knowledge results from message parts
-  const searchKnowledgeResults = message.parts
-    ?.filter(part => 
-      part.type === 'tool-invocation' && 
-      part.toolInvocation.toolName === 'searchKnowledge' && 
-      part.toolInvocation.state === 'result'
-    )
-    .map(part => (part as any).toolInvocation.result) || [];
+  const searchKnowledgeResults =
+    message.parts
+      ?.filter(
+        (part) =>
+          part.type === 'tool-invocation' &&
+          part.toolInvocation.toolName === 'searchKnowledge' &&
+          part.toolInvocation.state === 'result',
+      )
+      .map((part) => (part as any).toolInvocation.result) || [];
+
+  const sourceNames = Array.from(
+    new Set(
+      searchKnowledgeResults.flatMap(
+        (result: any) =>
+          result?.results?.map((searchResult: any) => {
+            const encodedName = searchResult.source?.split('/').at(-1) ?? '';
+            return decodeURIComponent(
+              encodedName.replace(/^[0-9a-f-]{36}-/, ''),
+            );
+          }) ?? [],
+      ),
+    ),
+  ).filter(Boolean);
 
   return (
     <AnimatePresence>
@@ -129,7 +145,7 @@ const PurePreviewMessage = ({
                               <PencilEditIcon />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Edit message</TooltipContent>
+                          <TooltipContent>Modifier le message</TooltipContent>
                         </Tooltip>
                       )}
 
@@ -238,13 +254,17 @@ const PurePreviewMessage = ({
                 message={message}
                 vote={vote}
                 isLoading={isLoading}
+                sourceNames={sourceNames}
               />
             )}
 
             {searchKnowledgeResults.length > 0 && (
               <div className="space-y-2 mt-4">
                 {searchKnowledgeResults.map((result, index) => (
-                  <SearchKnowledge key={`search-knowledge-${index}`} result={result} />
+                  <SearchKnowledge
+                    key={`${message.id}-${result?.results?.[0]?.source ?? index}`}
+                    result={result}
+                  />
                 ))}
               </div>
             )}

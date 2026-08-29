@@ -19,24 +19,26 @@ function PureSuggestedActions({
 }: SuggestedActionsProps) {
   const suggestedActions = [
     {
-      title: 'What are the advantages',
-      label: 'of using Next.js?',
-      action: 'What are the advantages of using Next.js?',
+      title: 'Présente-toi',
+      label: 'et explique-moi comment utiliser Dona-Chat',
+      action:
+        'Bonjour, présente-toi et explique-moi comment utiliser Dona-Chat pour mes cours.',
     },
     {
-      title: 'Write code to',
-      label: `demonstrate djikstra's algorithm`,
-      action: `Write code to demonstrate djikstra's algorithm`,
+      title: 'Quels documents',
+      label: 'sont disponibles dans ce cours ?',
+      action: 'Quels documents sont disponibles dans ce cours ?',
     },
     {
-      title: 'Help me write an essay',
-      label: `about silicon valley`,
-      action: `Help me write an essay about silicon valley`,
+      title: 'Explique-moi',
+      label: 'les notions importantes du cours',
+      action:
+        'Explique-moi les notions les plus importantes de ce cours à partir des documents.',
     },
     {
-      title: 'What is the weather',
-      label: 'in San Francisco?',
-      action: 'What is the weather in San Francisco?',
+      title: 'Génère une fiche',
+      label: 'de révision du cours',
+      action: 'Génère une fiche de révision complète pour ce cours.',
     },
   ];
 

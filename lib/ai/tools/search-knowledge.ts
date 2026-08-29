@@ -33,7 +33,7 @@ export function searchKnowledge({
         // Search for similar chunks in the knowledge base
         const results = await searchSimilarChunks({
           embedding,
-          limit: 10,
+          limit: 24,
           userId,
           sourceName,
           subjectId: subjectId ?? undefined,

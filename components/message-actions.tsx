@@ -21,11 +21,13 @@ export function PureMessageActions({
   message,
   vote,
   isLoading,
+  sourceNames = [],
 }: {
   chatId: string;
   message: Message;
   vote: Vote | undefined;
   isLoading: boolean;
+  sourceNames?: Array<string>;
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
@@ -168,6 +170,29 @@ export function PureMessageActions({
           </TooltipTrigger>
           <TooltipContent>Downvote Response</TooltipContent>
         </Tooltip>
+        {sourceNames.length > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                className="py-1 px-2 h-fit text-muted-foreground"
+                variant="outline"
+              >
+                {sourceNames.length} doc.
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="mb-1 font-medium">
+                Documents utiles à cette réponse
+              </p>
+              <ul className="list-disc space-y-1 pl-4">
+                {sourceNames.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   );
@@ -178,6 +203,7 @@ export const MessageActions = memo(
   (prevProps, nextProps) => {
     if (!equal(prevProps.vote, nextProps.vote)) return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
+    if (!equal(prevProps.sourceNames, nextProps.sourceNames)) return false;
 
     return true;
   },

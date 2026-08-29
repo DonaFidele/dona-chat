@@ -32,11 +32,11 @@ export const PreviewAttachment = ({
         )}
 
         {isUploading && (
-          <div
-            data-testid="input-attachment-loader"
-            className="animate-spin absolute text-zinc-500"
-          >
-            <LoaderIcon />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-md bg-background/80 text-zinc-600">
+            <div data-testid="input-attachment-loader" className="animate-spin">
+              <LoaderIcon size={22} />
+            </div>
+            <span className="text-[10px]">Importation…</span>
           </div>
         )}
       </div>

@@ -48,6 +48,13 @@ export function SidebarSubjects() {
       window.removeEventListener(SUBJECT_CHANGED_EVENT, refreshActiveSubject);
   }, []);
 
+  useEffect(() => {
+    const refreshSubjects = () => mutate();
+    window.addEventListener('subjects-updated', refreshSubjects);
+    return () =>
+      window.removeEventListener('subjects-updated', refreshSubjects);
+  }, [mutate]);
+
   const createSubject = async () => {
     const name = window.prompt('Nom de la matière ou du cours :')?.trim();
     if (!name) return;
@@ -73,8 +80,25 @@ export function SidebarSubjects() {
 
   const openSubjectChat = (subject: Subject) => {
     setActiveSubjectId(subject.id);
-    router.push(subject.latestChatId ? `/chat/${subject.latestChatId}` : '/');
-    router.refresh();
+    void fetch('/api/subjects')
+      .then((response) => response.json())
+      .then((result: SubjectsResponse) => {
+        const currentSubject = result.subjects.find(
+          (item) => item.id === subject.id,
+        );
+        router.push(
+          currentSubject?.latestChatId
+            ? `/chat/${currentSubject.latestChatId}`
+            : '/',
+        );
+        router.refresh();
+      })
+      .catch(() => {
+        router.push(
+          subject.latestChatId ? `/chat/${subject.latestChatId}` : '/',
+        );
+        router.refresh();
+      });
   };
 
   const uploadDocuments = async (files: Array<File>) => {

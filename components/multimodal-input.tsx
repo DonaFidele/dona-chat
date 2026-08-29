@@ -179,7 +179,7 @@ function PureMultimodalInput({
         );
 
         for (const attachment of indexedFiles) {
-          toast.success(`${attachment.name} was added to the knowledge base`);
+          toast.success(`${attachment.name} a été ajouté au cours`);
         }
 
         if (indexedFiles.length > 0) {
@@ -282,7 +282,7 @@ function PureMultimodalInput({
       <Textarea
         data-testid="multimodal-input"
         ref={textareaRef}
-        placeholder="Send a message..."
+        placeholder="Pose une question sur tes documents…"
         value={input}
         onChange={handleInput}
         className={cx(
@@ -300,7 +300,9 @@ function PureMultimodalInput({
             event.preventDefault();
 
             if (status !== 'ready') {
-              toast.error('Please wait for the model to finish its response!');
+              toast.error(
+                "Attends la fin de la réponse avant d'envoyer un nouveau message.",
+              );
             } else {
               submitForm();
             }

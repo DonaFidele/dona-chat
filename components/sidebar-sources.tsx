@@ -85,6 +85,7 @@ export function SidebarSources() {
             <SidebarMenuItem key={source.id}>
               <SidebarMenuButton
                 tooltip={source.name}
+                title={source.name}
                 className="h-auto py-1.5"
               >
                 <FileIcon size={14} />

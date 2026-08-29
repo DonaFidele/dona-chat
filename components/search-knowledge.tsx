@@ -55,7 +55,7 @@ function PureSearchKnowledge({ result }: SearchKnowledgeProps) {
 
   // Get unique sources
   const uniqueSources = Array.from(
-    new Map(results.map(result => [result.source, result])).values()
+    new Map(results.map((result) => [result.source, result])).values(),
   );
 
   const getSourceIcon = (sourceType: string) => {
@@ -74,21 +74,22 @@ function PureSearchKnowledge({ result }: SearchKnowledgeProps) {
   const getDocumentName = (source: string) => {
     // Extract just the filename from the path
     const parts = source.split('/');
-    return parts[parts.length - 1] || source;
+    return decodeURIComponent(
+      (parts[parts.length - 1] || source).replace(/^[0-9a-f-]{36}-/, ''),
+    );
   };
 
   return (
     <div className="space-y-3">
-      <div className="text-sm font-medium text-muted-foreground">
-        Sources
-      </div>
-      
+      <div className="text-sm font-medium text-muted-foreground">Sources</div>
+
       <div className="space-y-2">
-        {uniqueSources.map((result, index) => (
-          <div key={index} className="flex items-center gap-2">
+        {uniqueSources.map((result) => (
+          <div key={result.source} className="flex items-center gap-2">
             {getSourceIcon(result.sourceType)}
-            {result.sourceType?.toLowerCase() === 'url' && result.source.endsWith('.md') ? (
-              <a 
+            {result.sourceType?.toLowerCase() === 'url' &&
+            result.source.endsWith('.md') ? (
+              <a
                 href={result.source.replace(/\.md$/, '')}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -108,4 +109,4 @@ function PureSearchKnowledge({ result }: SearchKnowledgeProps) {
   );
 }
 
-export const SearchKnowledge = memo(PureSearchKnowledge); 
+export const SearchKnowledge = memo(PureSearchKnowledge);
