@@ -190,18 +190,15 @@ export async function POST(request: Request) {
           }),
           messages,
           maxSteps: 5,
-          experimental_activeTools:
-            selectedChatModel === 'chat-model-reasoning'
-              ? []
-              : [
-                  'searchKnowledge',
-                  'listKnowledgeFiles',
-                  'createStudySheet',
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
-                ],
+          experimental_activeTools: [
+            'searchKnowledge',
+            'listKnowledgeFiles',
+            'createStudySheet',
+            'getWeather',
+            'createDocument',
+            'updateDocument',
+            'requestSuggestions',
+          ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           experimental_generateMessageId: generateUUID,
           tools: {

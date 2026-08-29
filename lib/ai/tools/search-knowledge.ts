@@ -34,6 +34,7 @@ export function searchKnowledge({
         const results = await searchSimilarChunks({
           embedding,
           limit: 24,
+          threshold: 0.15,
           userId,
           sourceName,
           subjectId: subjectId ?? undefined,
