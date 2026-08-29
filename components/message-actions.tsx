@@ -3,6 +3,7 @@ import { useSWRConfig } from 'swr';
 import { useCopyToClipboard } from 'usehooks-ts';
 
 import type { Vote } from '@/lib/db/schema';
+import { FileIcon } from './icons';
 
 import { CopyIcon, ThumbDownIcon, ThumbUpIcon } from './icons';
 import { Button } from './ui/button';
@@ -15,6 +16,16 @@ import {
 import { memo } from 'react';
 import equal from 'fast-deep-equal';
 import { toast } from 'sonner';
+import useSWR from 'swr';
+import { fetcher } from '@/lib/utils';
+
+type PersistedSource = {
+  name: string;
+  uri: string;
+  similarity: number;
+};
+
+type MessageSourcesResponse = { sources: Array<PersistedSource> };
 
 export function PureMessageActions({
   chatId,
@@ -31,6 +42,20 @@ export function PureMessageActions({
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
+  const { data: persistedSources } = useSWR<MessageSourcesResponse>(
+    !isLoading && message.role === 'assistant'
+      ? `/api/message-sources?messageId=${encodeURIComponent(message.id)}`
+      : null,
+    fetcher,
+    {
+      refreshInterval: (latestData) => (latestData ? 0 : 1000),
+      shouldRetryOnError: false,
+    },
+  );
+  const persistedSourceNames = persistedSources?.sources.map(
+    (source) => source.name,
+  );
+  const displayedSourceNames = persistedSourceNames ?? sourceNames;
 
   if (isLoading) return null;
   if (message.role === 'user') return null;
@@ -173,7 +198,7 @@ export function PureMessageActions({
           </TooltipTrigger>
           <TooltipContent>Downvote Response</TooltipContent>
         </Tooltip>
-        {sourceNames.length > 0 && (
+        {displayedSourceNames.length > 0 && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -181,7 +206,8 @@ export function PureMessageActions({
                 className="py-1 px-2 h-fit text-muted-foreground"
                 variant="outline"
               >
-                {sourceNames.length} doc.
+                <FileIcon size={14} />
+                {displayedSourceNames.length}
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
@@ -189,7 +215,7 @@ export function PureMessageActions({
                 Documents utiles à cette réponse
               </p>
               <ul className="list-disc space-y-1 pl-4">
-                {sourceNames.map((name) => (
+                {displayedSourceNames.map((name) => (
                   <li key={name}>{name}</li>
                 ))}
               </ul>

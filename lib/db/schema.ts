@@ -64,6 +64,12 @@ export const messageDeprecated = pgTable('Message', {
 
 export type MessageDeprecated = InferSelectModel<typeof messageDeprecated>;
 
+export type MessageSource = {
+  name: string;
+  uri: string;
+  similarity: number;
+};
+
 export const message = pgTable('Message_v2', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   chatId: uuid('chatId')
@@ -72,6 +78,7 @@ export const message = pgTable('Message_v2', {
   role: varchar('role').notNull(),
   parts: json('parts').notNull(),
   attachments: json('attachments').notNull(),
+  sources: json('sources').$type<Array<MessageSource>>().notNull().default([]),
   createdAt: timestamp('createdAt').notNull(),
 });
 

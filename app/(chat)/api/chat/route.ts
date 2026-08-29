@@ -192,6 +192,20 @@ Résultat de recherche : ${retrieval.hasDocuments ? (retrieval.results.length ? 
 ${excerpts}
 
 RÈGLE IMPÉRATIVE : pour une question de contenu, réponds seulement avec les extraits ci-dessus. S’il n’y a aucun extrait pertinent, ne donne pas une explication générale : indique que la réponse n’est pas présente dans les documents, fais un bref briefing de la liste des documents disponibles, puis propose 2 ou 3 questions pertinentes sur ces documents. S’il n’y a aucun document, invite l’étudiant à créer ou choisir une matière et à ajouter un document.`;
+    const responseSources = Array.from(
+      new Map(
+        retrieval.results.map((result) => [result.source, result]),
+      ).values(),
+    ).map((result) => ({
+      name: decodeURIComponent(
+        (result.source.split('/').at(-1) ?? result.source).replace(
+          /^[0-9a-f-]{36}-/,
+          '',
+        ),
+      ),
+      uri: result.source,
+      similarity: result.similarity,
+    }));
 
     const { longitude, latitude, city, country } = geolocation(request);
 
@@ -210,6 +224,7 @@ RÈGLE IMPÉRATIVE : pour une question de contenu, réponds seulement avec les e
           role: 'user',
           parts: message.parts,
           attachments: message.experimental_attachments ?? [],
+          sources: [],
           createdAt: new Date(),
         },
       ],
@@ -291,6 +306,7 @@ RÈGLE IMPÉRATIVE : pour une question de contenu, réponds seulement avec les e
                       parts: assistantMessage.parts,
                       attachments:
                         assistantMessage.experimental_attachments ?? [],
+                      sources: responseSources,
                       createdAt: new Date(),
                     },
                   ],
