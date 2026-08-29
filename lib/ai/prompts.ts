@@ -72,7 +72,7 @@ export const systemPrompt = ({
   const requestPrompt = getRequestPromptFromHints(requestHints);
   const subjectPrompt = subjectName
     ? `This conversation is scoped to the study subject “${subjectName}”. Search and list only documents assigned to this subject.\n`
-    : 'This conversation is not scoped to a study subject; search across the user’s uploaded documents.\n';
+    : 'This conversation is not scoped to a study subject. Do not search or use documents from another subject; invite the student to choose a subject and add documents for any course-content question.\n';
 
   if (selectedChatModel === 'chat-model-reasoning') {
     return `${regularPrompt}\n\n${subjectPrompt}\n${retrievalContext}\n${requestPrompt}`;
