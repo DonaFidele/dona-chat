@@ -3,6 +3,69 @@ import { z } from 'zod';
 import { searchSimilarChunks } from '@/lib/db/queries';
 import { myProvider } from '../providers';
 
+function getFileName(sourceUri: string) {
+  const encodedName = sourceUri.split('/').at(-1) ?? sourceUri;
+  return decodeURIComponent(encodedName.replace(/^[0-9a-f-]{36}-/, ''));
+}
+
+export type StudyRetrieval = {
+  hasDocuments: boolean;
+  documentNames: Array<string>;
+  results: Array<{
+    content: string;
+    source: string;
+    sourceType: string;
+    similarity: number;
+  }>;
+};
+
+export async function retrieveStudyContext({
+  query,
+  userId,
+  subjectId,
+}: {
+  query: string;
+  userId: string;
+  subjectId?: string | null;
+}): Promise<StudyRetrieval> {
+  if (!subjectId) {
+    return { hasDocuments: false, documentNames: [], results: [] };
+  }
+
+  const { getUploadedResourcesByUserId } = await import('@/lib/db/queries');
+  const documents = await getUploadedResourcesByUserId({ userId, subjectId });
+  const documentNames = documents.map((document) =>
+    getFileName(document.sourceUri),
+  );
+
+  if (documents.length === 0) {
+    return { hasDocuments: false, documentNames, results: [] };
+  }
+
+  const { embedding } = await embed({
+    model: myProvider.textEmbeddingModel('embedding-model'),
+    value: query,
+  });
+  const results = await searchSimilarChunks({
+    embedding,
+    limit: 12,
+    threshold: 0.25,
+    userId,
+    subjectId,
+  });
+
+  return {
+    hasDocuments: true,
+    documentNames,
+    results: results.map((result) => ({
+      content: result.chunkContent,
+      source: result.resourceUri,
+      sourceType: result.resourceType,
+      similarity: result.similarity,
+    })),
+  };
+}
+
 export function searchKnowledge({
   userId,
   subjectId,
@@ -24,6 +87,15 @@ export function searchKnowledge({
     }),
     execute: async ({ query, sourceName }) => {
       try {
+        if (!subjectId) {
+          return {
+            resultType: 'knowledgeBaseResults',
+            message:
+              'No study subject is selected, so this conversation has no documents to search.',
+            results: [],
+          };
+        }
+
         // Generate embedding for the search query
         const { embedding } = await embed({
           model: myProvider.textEmbeddingModel('embedding-model'),
@@ -34,7 +106,7 @@ export function searchKnowledge({
         const results = await searchSimilarChunks({
           embedding,
           limit: 24,
-          threshold: 0.15,
+          threshold: 0.25,
           userId,
           sourceName,
           subjectId: subjectId ?? undefined,

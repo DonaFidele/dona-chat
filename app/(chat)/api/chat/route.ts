@@ -24,7 +24,10 @@ import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 import { getWeather } from '@/lib/ai/tools/get-weather';
-import { searchKnowledge } from '@/lib/ai/tools/search-knowledge';
+import {
+  retrieveStudyContext,
+  searchKnowledge,
+} from '@/lib/ai/tools/search-knowledge';
 import { listKnowledgeFiles } from '@/lib/ai/tools/list-knowledge-files';
 import { createStudySheet } from '@/lib/ai/tools/create-study-sheet';
 import { isProductionEnvironment, useTelemetry } from '@/lib/constants';
@@ -154,6 +157,42 @@ export async function POST(request: Request) {
       message,
     });
 
+    const question =
+      message.parts
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
+        .join('\n') || message.content;
+    const retrieval = await retrieveStudyContext({
+      query: question,
+      userId: session.user.id,
+      subjectId,
+    });
+    const documentList = retrieval.documentNames.length
+      ? retrieval.documentNames.map((name) => `- ${name}`).join('\n')
+      : '- Aucun document';
+    const excerpts = retrieval.results.length
+      ? retrieval.results
+          .map((result, index) => {
+            const sourceName = decodeURIComponent(
+              (result.source.split('/').at(-1) ?? result.source).replace(
+                /^[0-9a-f-]{36}-/,
+                '',
+              ),
+            );
+            return `[Extrait ${index + 1} — ${sourceName}]\n${result.content.slice(0, 1200)}`;
+          })
+          .join('\n\n')
+      : 'Aucun extrait pertinent n’a été trouvé pour cette question.';
+    const retrievalContext = `
+CONTEXTE DOCUMENTAIRE PRÉ-RECHERCHÉ (autoritatif pour cette réponse)
+Documents disponibles dans cette conversation :
+${documentList}
+
+Résultat de recherche : ${retrieval.hasDocuments ? (retrieval.results.length ? 'EXTRAITS PERTINENTS TROUVÉS' : 'AUCUN EXTRAIT PERTINENT') : 'AUCUN DOCUMENT DISPONIBLE'}
+${excerpts}
+
+RÈGLE IMPÉRATIVE : pour une question de contenu, réponds seulement avec les extraits ci-dessus. S’il n’y a aucun extrait pertinent, ne donne pas une explication générale : indique que la réponse n’est pas présente dans les documents, fais un bref briefing de la liste des documents disponibles, puis propose 2 ou 3 questions pertinentes sur ces documents. S’il n’y a aucun document, invite l’étudiant à créer ou choisir une matière et à ajouter un document.`;
+
     const { longitude, latitude, city, country } = geolocation(request);
 
     const requestHints: RequestHints = {
@@ -187,6 +226,7 @@ export async function POST(request: Request) {
             selectedChatModel,
             requestHints,
             subjectName,
+            retrievalContext,
           }),
           messages,
           maxSteps: 5,
