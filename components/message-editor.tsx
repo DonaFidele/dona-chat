@@ -63,6 +63,7 @@ export function MessageEditor({
 
       <div className="flex flex-row gap-2 justify-end">
         <Button
+          type="button"
           variant="outline"
           className="h-fit py-2 px-3"
           onClick={() => {
@@ -72,6 +73,7 @@ export function MessageEditor({
           Annuler
         </Button>
         <Button
+          type="button"
           data-testid="message-editor-send-button"
           variant="default"
           className="h-fit py-2 px-3"

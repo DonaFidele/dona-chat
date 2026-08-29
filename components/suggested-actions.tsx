@@ -25,20 +25,21 @@ function PureSuggestedActions({
         'Bonjour, présente-toi et explique-moi comment utiliser Dona-Chat pour mes cours.',
     },
     {
-      title: 'Quels documents',
-      label: 'sont disponibles dans ce cours ?',
-      action: 'Quels documents sont disponibles dans ce cours ?',
+      title: 'Comment réviser',
+      label: 'efficacement un chapitre ?',
+      action: 'Comment réviser efficacement un chapitre ?',
     },
     {
-      title: 'Explique-moi',
-      label: 'les notions importantes du cours',
+      title: 'Organiser mes cours',
+      label: 'et ajouter mes documents',
       action:
-        'Explique-moi les notions les plus importantes de ce cours à partir des documents.',
+        'Comment créer un cours et y ajouter mes documents dans Dona-Chat ?',
     },
     {
-      title: 'Génère une fiche',
-      label: 'de révision du cours',
-      action: 'Génère une fiche de révision complète pour ce cours.',
+      title: 'Bien apprendre',
+      label: 'avant un examen',
+      action:
+        'Quelle méthode puis-je suivre pour apprendre efficacement avant un examen ?',
     },
   ];
 
@@ -57,6 +58,7 @@ function PureSuggestedActions({
           className={index > 1 ? 'hidden sm:block' : 'block'}
         >
           <Button
+            type="button"
             variant="ghost"
             onClick={async () => {
               append({

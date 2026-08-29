@@ -18,7 +18,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
-import { SearchKnowledge } from './search-knowledge';
 import type { UseChatHelpers } from '@ai-sdk/react';
 
 const PurePreviewMessage = ({
@@ -135,6 +134,7 @@ const PurePreviewMessage = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
+                              type="button"
                               data-testid="message-edit-button"
                               variant="ghost"
                               className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
@@ -256,17 +256,6 @@ const PurePreviewMessage = ({
                 isLoading={isLoading}
                 sourceNames={sourceNames}
               />
-            )}
-
-            {searchKnowledgeResults.length > 0 && (
-              <div className="space-y-2 mt-4">
-                {searchKnowledgeResults.map((result, index) => (
-                  <SearchKnowledge
-                    key={`${message.id}-${result?.results?.[0]?.source ?? index}`}
-                    result={result}
-                  />
-                ))}
-              </div>
             )}
           </div>
         </div>

@@ -47,7 +47,22 @@ export function searchKnowledge({
           };
         }
 
-        const formattedResults = results.map((result, index) => ({
+        const bestSimilarity = results[0]?.similarity ?? 0;
+        const relevantSourceUris = new Set(
+          Array.from(
+            new Map(
+              results.map((result) => [result.resourceUri, result]),
+            ).values(),
+          )
+            .filter((result) => result.similarity >= bestSimilarity - 0.08)
+            .slice(0, 4)
+            .map((result) => result.resourceUri),
+        );
+        const relevantResults = results
+          .filter((result) => relevantSourceUris.has(result.resourceUri))
+          .slice(0, 8);
+
+        const formattedResults = relevantResults.map((result, index) => ({
           rank: index + 1,
           content: result.chunkContent,
           source: result.resourceUri,

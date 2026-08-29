@@ -20,7 +20,7 @@ import { useSearchParams } from 'next/navigation';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
-import { getActiveSubjectId } from '@/lib/study-subject';
+import { getActiveSubjectId, setActiveSubjectId } from '@/lib/study-subject';
 
 export function Chat({
   id,
@@ -30,6 +30,7 @@ export function Chat({
   isReadonly,
   session,
   autoResume,
+  initialSubjectId,
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -38,6 +39,7 @@ export function Chat({
   isReadonly: boolean;
   session: Session;
   autoResume: boolean;
+  initialSubjectId?: string | null;
 }) {
   const { mutate } = useSWRConfig();
 
@@ -45,6 +47,12 @@ export function Chat({
     chatId: id,
     initialVisibilityType,
   });
+
+  useEffect(() => {
+    if (initialSubjectId !== undefined) {
+      setActiveSubjectId(initialSubjectId);
+    }
+  }, [initialSubjectId]);
 
   const {
     messages,
