@@ -1,12 +1,35 @@
 import type { UIMessage } from 'ai';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { Greeting } from './greeting';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { motion } from 'framer-motion';
 import { useMessages } from '@/hooks/use-messages';
+
+function getSourceNames(message: UIMessage) {
+  return Array.from(
+    new Set(
+      message.parts
+        ?.filter(
+          (part) =>
+            part.type === 'tool-invocation' &&
+            part.toolInvocation.toolName === 'searchKnowledge' &&
+            part.toolInvocation.state === 'result',
+        )
+        .flatMap((part) => {
+          const result = (part as any).toolInvocation.result;
+          return result?.results?.map((searchResult: any) => {
+            const encodedName = searchResult.source?.split('/').at(-1) ?? '';
+            return decodeURIComponent(
+              encodedName.replace(/^[0-9a-f-]{36}-/, ''),
+            );
+          });
+        }) ?? [],
+    ),
+  ).filter(Boolean) as Array<string>;
+}
 
 interface MessagesProps {
   chatId: string;
@@ -39,6 +62,29 @@ function PureMessages({
     status,
   });
 
+  const sourceNamesByMessageId = useMemo(() => {
+    const sourcesByMessageId = new Map<string, Array<string>>();
+    let pendingSourceNames: Array<string> = [];
+
+    for (const message of messages) {
+      const ownSourceNames = getSourceNames(message);
+      const hasText = message.parts?.some((part) => part.type === 'text');
+
+      if (ownSourceNames.length > 0) {
+        pendingSourceNames = Array.from(
+          new Set([...pendingSourceNames, ...ownSourceNames]),
+        );
+      }
+
+      if (message.role === 'assistant' && hasText) {
+        sourcesByMessageId.set(message.id, pendingSourceNames);
+        pendingSourceNames = [];
+      }
+    }
+
+    return sourcesByMessageId;
+  }, [messages]);
+
   return (
     <div
       ref={messagesContainerRef}
@@ -59,6 +105,7 @@ function PureMessages({
           }
           setMessages={setMessages}
           reload={reload}
+          sourceNames={sourceNamesByMessageId.get(message.id) ?? []}
           isReadonly={isReadonly}
           requiresScrollPadding={
             hasSentMessage && index === messages.length - 1

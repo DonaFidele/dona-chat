@@ -29,6 +29,7 @@ const PurePreviewMessage = ({
   reload,
   isReadonly,
   requiresScrollPadding,
+  sourceNames,
 }: {
   chatId: string;
   message: UIMessage;
@@ -38,33 +39,9 @@ const PurePreviewMessage = ({
   reload: UseChatHelpers['reload'];
   isReadonly: boolean;
   requiresScrollPadding: boolean;
+  sourceNames: Array<string>;
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
-
-  // Extract search knowledge results from message parts
-  const searchKnowledgeResults =
-    message.parts
-      ?.filter(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation.toolName === 'searchKnowledge' &&
-          part.toolInvocation.state === 'result',
-      )
-      .map((part) => (part as any).toolInvocation.result) || [];
-
-  const sourceNames = Array.from(
-    new Set(
-      searchKnowledgeResults.flatMap(
-        (result: any) =>
-          result?.results?.map((searchResult: any) => {
-            const encodedName = searchResult.source?.split('/').at(-1) ?? '';
-            return decodeURIComponent(
-              encodedName.replace(/^[0-9a-f-]{36}-/, ''),
-            );
-          }) ?? [],
-      ),
-    ),
-  ).filter(Boolean);
 
   return (
     <AnimatePresence>
@@ -273,6 +250,7 @@ export const PreviewMessage = memo(
       return false;
     if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
     if (!equal(prevProps.vote, nextProps.vote)) return false;
+    if (!equal(prevProps.sourceNames, nextProps.sourceNames)) return false;
 
     return true;
   },

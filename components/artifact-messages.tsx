@@ -57,6 +57,7 @@ function PureArtifactMessages({
           }
           setMessages={setMessages}
           reload={reload}
+          sourceNames={[]}
           isReadonly={isReadonly}
           requiresScrollPadding={
             hasSentMessage && index === messages.length - 1
