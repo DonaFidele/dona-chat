@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { searchSimilarChunks } from '@/lib/db/queries';
 import { myProvider } from '../providers';
 
+export const MINIMUM_RELEVANCE_SCORE = 0.7;
+
 function getFileName(sourceUri: string) {
   const encodedName = sourceUri.split('/').at(-1) ?? sourceUri;
   return decodeURIComponent(encodedName.replace(/^[0-9a-f-]{36}-/, ''));
@@ -49,7 +51,7 @@ export async function retrieveStudyContext({
   const results = await searchSimilarChunks({
     embedding,
     limit: 12,
-    threshold: 0.25,
+    threshold: MINIMUM_RELEVANCE_SCORE,
     userId,
     subjectId,
   });
@@ -118,7 +120,7 @@ export function searchKnowledge({
         const results = await searchSimilarChunks({
           embedding,
           limit: 24,
-          threshold: 0.25,
+          threshold: MINIMUM_RELEVANCE_SCORE,
           userId,
           sourceName,
           subjectId: subjectId ?? undefined,

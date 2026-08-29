@@ -172,26 +172,26 @@ export async function POST(request: Request) {
       : '- Aucun document';
     const excerpts = retrieval.results.length
       ? retrieval.results
-          .map((result, index) => {
+          .map((result) => {
             const sourceName = decodeURIComponent(
               (result.source.split('/').at(-1) ?? result.source).replace(
                 /^[0-9a-f-]{36}-/,
                 '',
               ),
             );
-            return `[Extrait ${index + 1} — ${sourceName}]\n${result.content.slice(0, 1200)}`;
+            return `--- DÉBUT DU DOCUMENT : ${sourceName} ---\n${result.content.slice(0, 1200)}\n--- FIN DU DOCUMENT : ${sourceName} ---`;
           })
           .join('\n\n')
-      : 'Aucun extrait pertinent n’a été trouvé pour cette question.';
+      : '';
     const retrievalContext = `
-CONTEXTE DOCUMENTAIRE PRÉ-RECHERCHÉ (autoritatif pour cette réponse)
-Documents disponibles dans cette conversation :
+CONTEXTE DOCUMENTAIRE (autoritatif pour cette réponse)
+Documents associés à cette conversation :
 ${documentList}
 
-Résultat de recherche : ${retrieval.hasDocuments ? (retrieval.results.length ? 'EXTRAITS PERTINENTS TROUVÉS' : 'AUCUN EXTRAIT PERTINENT') : 'AUCUN DOCUMENT DISPONIBLE'}
+CONTEXTE :
 ${excerpts}
 
-RÈGLE IMPÉRATIVE : pour une question de contenu, réponds seulement avec les extraits ci-dessus. S’il n’y a aucun extrait pertinent, ne donne pas une explication générale : indique que la réponse n’est pas présente dans les documents, fais un bref briefing de la liste des documents disponibles, puis propose 2 ou 3 questions pertinentes sur ces documents. S’il n’y a aucun document, invite l’étudiant à créer ou choisir une matière et à ajouter un document.`;
+STATUT : ${retrieval.hasDocuments ? (retrieval.results.length ? 'CONTEXTE PERTINENT DISPONIBLE' : 'CONTEXTE VIDE : aucun extrait ne dépasse le seuil de pertinence') : 'CONTEXTE VIDE : aucun document associé à cette conversation'}`;
     const responseSources = Array.from(
       new Map(
         retrieval.results.map((result) => [result.source, result]),
