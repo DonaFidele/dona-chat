@@ -26,6 +26,7 @@ export const subject = pgTable('Subject', {
   name: varchar('name', { length: 100 }).notNull(),
   description: varchar('description', { length: 180 }),
   color: varchar('color', { length: 32 }),
+  archivedAt: timestamp('archived_at'),
   userId: uuid('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),

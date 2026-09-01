@@ -204,7 +204,9 @@ export async function getSubjectsByUserId({ userId }: { userId: string }) {
       })
       .from(subject)
       .leftJoin(resource, eq(resource.subjectId, subject.id))
-      .where(eq(subject.userId, userId))
+      .where(
+        and(eq(subject.userId, userId), sql`${subject.archivedAt} IS NULL`),
+      )
       .groupBy(subject.id)
       .orderBy(desc(subject.createdAt));
 
@@ -224,6 +226,62 @@ export async function getSubjectsByUserId({ userId }: { userId: string }) {
     console.error('Failed to get subjects:', error);
     throw new ChatSDKError('bad_request:database', 'Failed to get subjects');
   }
+}
+
+export async function updateSubject({
+  id,
+  userId,
+  name,
+  description,
+  color,
+}: {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+}) {
+  const [updated] = await dbClient
+    .update(subject)
+    .set({ name, description, color, updatedAt: new Date() })
+    .where(and(eq(subject.id, id), eq(subject.userId, userId)))
+    .returning();
+  return updated;
+}
+
+export async function archiveSubject({
+  id,
+  userId,
+}: { id: string; userId: string }) {
+  const [archived] = await dbClient
+    .update(subject)
+    .set({ archivedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(subject.id, id), eq(subject.userId, userId)))
+    .returning();
+  return archived;
+}
+
+export async function restoreSubject({
+  id,
+  userId,
+}: { id: string; userId: string }) {
+  const [restored] = await dbClient
+    .update(subject)
+    .set({ archivedAt: null, updatedAt: new Date() })
+    .where(and(eq(subject.id, id), eq(subject.userId, userId)))
+    .returning();
+  return restored;
+}
+
+export async function permanentlyDeleteSubject({
+  id,
+  userId,
+}: { id: string; userId: string }) {
+  const [deleted] = await dbClient
+    .delete(subject)
+    .where(and(eq(subject.id, id), eq(subject.userId, userId)))
+    .returning();
+  return deleted;
 }
 
 export async function deleteChatById(
