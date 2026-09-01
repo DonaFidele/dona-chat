@@ -36,6 +36,20 @@ export const subject = pgTable('Subject', {
 
 export type Subject = InferSelectModel<typeof subject>;
 
+export const subjectShare = pgTable('SubjectShare', {
+  token: uuid('token').primaryKey().notNull().defaultRandom(),
+  subjectId: uuid('subject_id')
+    .notNull()
+    .references(() => subject.id, { onDelete: 'cascade' }),
+  scope: varchar('scope', { enum: ['read', 'comment'] })
+    .notNull()
+    .default('read'),
+  expiresAt: timestamp('expires_at').notNull(),
+  revokedAt: timestamp('revoked_at'),
+  lastAccessedAt: timestamp('last_accessed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export const chat = pgTable('Chat', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   createdAt: timestamp('createdAt').notNull(),

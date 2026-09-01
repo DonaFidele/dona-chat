@@ -99,6 +99,13 @@
       "when": 1788282398721,
       "tag": "0013_eminent_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788284227162,
+      "tag": "0014_faithful_zarek",
+      "breakpoints": true
     }
   ]
 }

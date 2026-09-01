@@ -33,6 +33,7 @@ import {
   subject,
   resource,
   resourceChunk,
+  subjectShare,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -189,6 +190,65 @@ export async function getSubjectById({
     console.error('Failed to get subject:', error);
     throw new ChatSDKError('bad_request:database', 'Failed to get subject');
   }
+}
+
+export async function createSubjectShare({
+  subjectId,
+  scope,
+  expiresAt,
+}: { subjectId: string; scope: 'read' | 'comment'; expiresAt: Date }) {
+  const [share] = await dbClient
+    .insert(subjectShare)
+    .values({ subjectId, scope, expiresAt })
+    .returning();
+  return share;
+}
+
+export async function getActiveSubjectShare(token: string) {
+  const [share] = await dbClient
+    .select()
+    .from(subjectShare)
+    .where(
+      and(
+        eq(subjectShare.token, token),
+        sql`${subjectShare.revokedAt} IS NULL`,
+        gt(subjectShare.expiresAt, new Date()),
+      ),
+    );
+  if (share)
+    await dbClient
+      .update(subjectShare)
+      .set({ lastAccessedAt: new Date() })
+      .where(eq(subjectShare.token, token));
+  return share;
+}
+
+export async function getSubjectForShare(id: string) {
+  const [result] = await dbClient
+    .select({
+      id: subject.id,
+      name: subject.name,
+      description: subject.description,
+      color: subject.color,
+      createdAt: subject.createdAt,
+    })
+    .from(subject)
+    .where(eq(subject.id, id));
+  return result;
+}
+
+export async function revokeSubjectShare({
+  token,
+  subjectId,
+}: { token: string; subjectId: string }) {
+  const [share] = await dbClient
+    .update(subjectShare)
+    .set({ revokedAt: new Date() })
+    .where(
+      and(eq(subjectShare.token, token), eq(subjectShare.subjectId, subjectId)),
+    )
+    .returning();
+  return share;
 }
 
 export async function getSubjectsByUserId({ userId }: { userId: string }) {
