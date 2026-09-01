@@ -11,6 +11,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['var(--font-geist)'],
+        accent: ['var(--font-kalam)'],
         mono: ['var(--font-geist-mono)'],
       },
       screens: {
