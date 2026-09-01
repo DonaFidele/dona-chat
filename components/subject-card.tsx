@@ -43,8 +43,8 @@ export function SubjectCard({
   return (
     <button
       type="button"
-      className="group relative w-full overflow-hidden rounded-2xl border bg-card p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75"
-      style={{ borderColor: `${theme.color}55` }}
+      className="group relative w-full overflow-hidden rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-75"
+      style={{ borderColor: theme.color }}
       onClick={() => onOpen(subject)}
       disabled={isOpening}
       aria-label={`Ouvrir la matière ${subject.name}`}
@@ -57,11 +57,11 @@ export function SubjectCard({
       />
       <div className="relative flex items-start justify-between gap-4">
         <span
-          className="grid size-12 place-items-center rounded-xl shadow-sm"
+          className="grid size-[26px] place-items-center rounded-md"
           style={{ backgroundColor: theme.color, color: theme.accent }}
           aria-hidden="true"
         >
-          <Icon size={23} />
+          <Icon size={15} />
         </span>
         {subject.isExample && (
           <span
@@ -73,15 +73,15 @@ export function SubjectCard({
         )}
       </div>
 
-      <div className="relative mt-6 min-w-0">
-        <h2 className="truncate text-xl font-semibold">{subject.name}</h2>
+      <div className="relative mt-3 min-w-0">
+        <h2 className="truncate text-sm font-medium">{subject.name}</h2>
         <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted-foreground">
           {subject.description ||
             'Organisez vos documents et révisez ce cours.'}
         </p>
       </div>
 
-      <div className="relative mt-6 flex items-center justify-between gap-3">
+      <div className="relative mt-3 flex items-center justify-between gap-3">
         <span className="text-xs text-muted-foreground">
           {subject.documentCount ?? 0} document
           {(subject.documentCount ?? 0) > 1 ? 's' : ''}
