@@ -24,6 +24,8 @@ export type User = InferSelectModel<typeof user>;
 export const subject = pgTable('Subject', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   name: varchar('name', { length: 100 }).notNull(),
+  description: varchar('description', { length: 180 }),
+  color: varchar('color', { length: 32 }),
   userId: uuid('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),

@@ -142,15 +142,26 @@ export async function saveChat(
 
 export async function createSubject({
   name,
+  description,
+  color,
   userId,
 }: {
   name: string;
+  description?: string | null;
+  color?: string | null;
   userId: string;
 }) {
   try {
     const [createdSubject] = await dbClient
       .insert(subject)
-      .values({ name, userId, createdAt: new Date(), updatedAt: new Date() })
+      .values({
+        name,
+        description,
+        color,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .returning();
 
     return createdSubject;
@@ -186,6 +197,8 @@ export async function getSubjectsByUserId({ userId }: { userId: string }) {
       .select({
         id: subject.id,
         name: subject.name,
+        description: subject.description,
+        color: subject.color,
         createdAt: subject.createdAt,
         documentCount: count(resource.id),
       })
@@ -193,7 +206,7 @@ export async function getSubjectsByUserId({ userId }: { userId: string }) {
       .leftJoin(resource, eq(resource.subjectId, subject.id))
       .where(eq(subject.userId, userId))
       .groupBy(subject.id)
-      .orderBy(asc(subject.createdAt));
+      .orderBy(desc(subject.createdAt));
 
     return await Promise.all(
       subjects.map(async (item) => {

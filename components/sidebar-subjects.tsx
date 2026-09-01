@@ -26,6 +26,8 @@ import {
 type Subject = {
   id: string;
   name: string;
+  description: string | null;
+  color: string | null;
   documentCount: number;
   latestChatId: string | null;
 };
@@ -55,29 +57,6 @@ export function SidebarSubjects() {
       window.removeEventListener('subjects-updated', refreshSubjects);
   }, [mutate]);
 
-  const createSubject = async () => {
-    const name = window.prompt('Nom de la matière ou du cours :')?.trim();
-    if (!name) return;
-
-    const response = await fetch('/api/subjects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
-    const result = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      toast.error(result?.error ?? "La matière n'a pas pu être créée");
-      return;
-    }
-
-    setActiveSubjectId(result.subject.id);
-    await mutate();
-    toast.success(`${result.subject.name} a été créée`);
-    router.push('/');
-    router.refresh();
-  };
-
   const openSubjectChat = (subject: Subject) => {
     setActiveSubjectId(subject.id);
     void fetch('/api/subjects')
@@ -89,13 +68,15 @@ export function SidebarSubjects() {
         router.push(
           currentSubject?.latestChatId
             ? `/chat/${currentSubject.latestChatId}`
-            : '/',
+            : `/chat?subject=${subject.id}`,
         );
         router.refresh();
       })
       .catch(() => {
         router.push(
-          subject.latestChatId ? `/chat/${subject.latestChatId}` : '/',
+          subject.latestChatId
+            ? `/chat/${subject.latestChatId}`
+            : `/chat?subject=${subject.id}`,
         );
         router.refresh();
       });
@@ -151,7 +132,7 @@ export function SidebarSubjects() {
           variant="ghost"
           size="icon"
           className="size-6"
-          onClick={createSubject}
+          onClick={() => router.push('/')}
           aria-label="Ajouter une matière"
         >
           <Plus size={14} />

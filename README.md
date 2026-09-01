@@ -15,13 +15,20 @@ Dona-Chat est un assistant d’étude fondé sur les documents de l’étudiant.
 
 ## Parcours utilisateur
 
-1. Créer une matière dans la sidebar.
-2. Utiliser le bouton `+` du cours pour ajouter un ou plusieurs documents.
-3. Ouvrir le cours : Dona-Chat affiche ou crée la conversation associée.
-4. Poser une question sur le contenu ; l’assistant recherche dans les documents du cours.
-5. Demander « Génère une fiche de révision » pour créer une fiche sauvegardée et éditable.
+1. À l’ouverture, choisir une matière dans la grille d’accueil ou cliquer sur **Créer une matière**.
+2. Saisir le nom, une courte description et, si besoin, une couleur. Une palette est proposée automatiquement selon la matière.
+3. Utiliser le bouton `+` du cours dans la sidebar pour ajouter un ou plusieurs documents.
+4. Ouvrir le cours : Dona-Chat affiche ou crée la conversation associée.
+5. Poser une question sur le contenu ; l’assistant recherche dans les documents du cours.
+6. Demander « Génère une fiche de révision » pour créer une fiche sauvegardée et éditable.
 
 La vue **Tous les documents** reste disponible pour retrouver les sources non classées dans une matière.
+
+### Personnaliser les couleurs des matières
+
+Les thèmes par défaut sont définis dans `lib/subject-colors.ts`. Par exemple, **Le droit** utilise le bleu nuit `#1E3A8A` avec un accent or `#FBBF24`, et **Mathématiques** le vert émeraude `#065F46` avec un accent cyan `#06B6D4`.
+
+Pour ajouter un thème, complète `subjectColorMap` avec le nom normalisé de la matière, sa couleur principale, sa couleur d’accent et une icône. L’utilisateur peut également sélectionner une couleur lors de la création d’une matière.
 
 ## Stack technique
 

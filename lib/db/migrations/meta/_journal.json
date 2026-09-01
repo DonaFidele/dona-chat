@@ -85,6 +85,13 @@
       "when": 1788018706195,
       "tag": "0011_massive_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788274838480,
+      "tag": "0012_lying_tyrannus",
+      "breakpoints": true
     }
   ]
 }

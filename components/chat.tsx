@@ -78,7 +78,7 @@ export function Chat({
       message: body.messages.at(-1),
       selectedChatModel: initialChatModel,
       selectedVisibilityType: visibilityType,
-      selectedSubjectId: getActiveSubjectId(),
+      selectedSubjectId: getActiveSubjectId() ?? initialSubjectId ?? null,
     }),
     onFinish: () => {
       window.history.replaceState({}, '', `/chat/${id}`);

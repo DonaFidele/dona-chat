@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 const createSubjectSchema = z.object({
   name: z.string().trim().min(1).max(100),
+  description: z.string().trim().max(180).optional(),
+  color: z.string().trim().max(32).optional(),
 });
 
 export async function GET() {
@@ -36,6 +38,8 @@ export async function POST(request: Request) {
 
   const createdSubject = await createSubject({
     name: payload.data.name,
+    description: payload.data.description || null,
+    color: payload.data.color || null,
     userId: session.user.id,
   });
 
