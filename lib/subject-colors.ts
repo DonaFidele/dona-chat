@@ -26,8 +26,17 @@ export function getSubjectTheme(
   name: string,
   selectedColor?: string | null,
 ): SubjectTheme {
-  const normalizedName = name.trim().toLocaleLowerCase('fr-FR');
-  const mappedTheme = subjectColorMap[normalizedName] ?? defaultTheme;
+  const normalizedName = name
+    .trim()
+    .toLocaleLowerCase('fr-FR')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const mappedKey = Object.keys(subjectColorMap).find((key) =>
+    normalizedName.includes(
+      key.normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+    ),
+  );
+  const mappedTheme = mappedKey ? subjectColorMap[mappedKey] : defaultTheme;
 
   return {
     ...mappedTheme,
