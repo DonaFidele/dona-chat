@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 
 import { PlusIcon } from '@/components/icons';
 import { SidebarHistory } from '@/components/sidebar-history';
-import { SidebarSources } from '@/components/sidebar-sources';
 import { SidebarSubjects } from '@/components/sidebar-subjects';
-import { SidebarReviewSheets } from '@/components/sidebar-review-sheets';
 import { SidebarUserNav } from '@/components/sidebar-user-nav';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -61,13 +60,22 @@ export function AppSidebar({ user }: { user: User | undefined }) {
           </div>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2">
         {user && <SidebarSubjects />}
-        {user && <SidebarSources />}
-        {user && <SidebarReviewSheets />}
-        <SidebarHistory user={user} />
       </SidebarContent>
-      <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
+      <SidebarFooter className="gap-2 border-t border-sidebar-border/70 p-2">
+        <Button
+          asChild
+          variant="ghost"
+          className="h-9 justify-start gap-2 rounded-lg px-3 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Link href="/">
+            <ArrowLeft data-icon="inline-start" />
+            Mes matières
+          </Link>
+        </Button>
+        {user && <SidebarUserNav user={user} />}
+      </SidebarFooter>
     </Sidebar>
   );
 }
