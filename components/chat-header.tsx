@@ -6,19 +6,24 @@ import { useWindowSize } from 'usehooks-ts';
 
 import { ModelSelector } from '@/components/model-selector';
 import { SidebarToggle } from '@/components/sidebar-toggle';
+import type { VisibilityType } from './visibility-selector';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, VercelIcon } from './icons';
 import { BookOpen, FileText, CircleHelp } from 'lucide-react';
+import { SidebarSources } from './sidebar-sources';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { type VisibilityType, VisibilitySelector } from './visibility-selector';
 import type { Session } from 'next-auth';
 
 function PureChatHeader({
   chatId,
   selectedModelId,
-  selectedVisibilityType,
   isReadonly,
   session,
   subjectName,
@@ -47,6 +52,17 @@ function PureChatHeader({
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Espace d&apos;étude</p>
         </div>
       </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="order-2 ml-auto text-muted-foreground" aria-label="Afficher les fichiers uploadés" title="Fichiers uploadés">
+            <FileText />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-80 p-2">
+          <SidebarSources />
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="order-3 flex w-full items-center gap-2 md:order-2 md:w-auto">
         <Button
@@ -88,22 +104,6 @@ function PureChatHeader({
           </TooltipTrigger>
           <TooltipContent>New Chat</TooltipContent>
         </Tooltip>
-      )}
-
-      {!isReadonly && (
-        <ModelSelector
-          session={session}
-          selectedModelId={selectedModelId}
-          className="order-1 md:order-2"
-        />
-      )}
-
-      {!isReadonly && (
-        <VisibilitySelector
-          chatId={chatId}
-          selectedVisibilityType={selectedVisibilityType}
-          className="order-1 md:order-3"
-        />
       )}
 
       <Button

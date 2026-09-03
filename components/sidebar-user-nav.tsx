@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronUp } from 'lucide-react';
+import { ChevronUp, Bot, Globe2, LockKeyhole } from 'lucide-react';
 import Image from 'next/image';
 import type { User } from 'next-auth';
 import { signOut, useSession } from 'next-auth/react';
@@ -77,6 +77,19 @@ export function SidebarUserNav({ user }: { user: User }) {
               onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             >
               {`Toggle ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Bot data-icon="inline-start" />
+              Chat model
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Globe2 data-icon="inline-start" />
+              Public
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <LockKeyhole data-icon="inline-start" />
+              Private
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">

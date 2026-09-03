@@ -1,6 +1,6 @@
 'use client';
 
-import { Folder, Plus } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -14,11 +14,9 @@ import { fetcher } from '@/lib/utils';
 import { Button } from './ui/button';
 import {
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
 } from './ui/sidebar';
@@ -128,18 +126,6 @@ export function SidebarSubjects() {
       <SidebarGroupLabel className="px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/50">
         Mes matières
       </SidebarGroupLabel>
-      <SidebarGroupAction asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          onClick={() => router.push('/')}
-          aria-label="Ajouter une matière"
-        >
-          <Plus size={14} />
-        </Button>
-      </SidebarGroupAction>
       <SidebarGroupContent>
         <input
           ref={fileInputRef}
@@ -154,48 +140,25 @@ export function SidebarSubjects() {
           }}
         />
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              isActive={!activeSubjectId}
-              onClick={() => {
-                setActiveSubjectId(null);
-                router.push('/');
-                router.refresh();
-              }}
-              tooltip="Tous les documents"
-            >
-              <Folder size={14} />
-              <span>Tous les documents</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           {data?.subjects.map((subject) => (
             <SidebarMenuItem key={subject.id}>
               <SidebarMenuButton
                 isActive={activeSubjectId === subject.id}
                 onClick={() => openSubjectChat(subject)}
                 tooltip={subject.name}
+                className="group/subject h-10 rounded-lg px-2"
               >
-                <Folder size={14} />
+                <span
+                  className="size-3.5 shrink-0 rounded-[3px] ring-1 ring-sidebar-foreground/20"
+                  style={{ backgroundColor: subject.color ?? 'hsl(var(--sidebar-primary))' }}
+                  aria-hidden="true"
+                />
+                <BookOpen className="text-sidebar-foreground/65 group-data-[active=true]/subject:text-sidebar-primary" />
                 <span className="truncate">{subject.name}</span>
                 <span className="ml-auto mr-5 text-xs text-sidebar-foreground/50">
                   {subject.documentCount}
                 </span>
               </SidebarMenuButton>
-              <SidebarMenuAction
-                type="button"
-                className={activeSubjectId === subject.id ? 'opacity-100' : undefined}
-                showOnHover
-                disabled={isUploading}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setUploadSubject(subject);
-                  fileInputRef.current?.click();
-                }}
-                aria-label={`Ajouter des documents à ${subject.name}`}
-                title="Ajouter des documents"
-              >
-                <Plus size={14} />
-              </SidebarMenuAction>
             </SidebarMenuItem>
           ))}
           {data?.subjects.length === 0 && (
