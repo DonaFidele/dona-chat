@@ -8,7 +8,7 @@ import { ModelSelector } from '@/components/model-selector';
 import { SidebarToggle } from '@/components/sidebar-toggle';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, VercelIcon } from './icons';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, FileText, CircleHelp } from 'lucide-react';
 import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
@@ -46,6 +46,29 @@ function PureChatHeader({
           <p className="truncate font-semibold tracking-tight">{subjectName ?? 'Dona-Chat'}</p>
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Espace d&apos;étude</p>
         </div>
+      </div>
+
+      <div className="order-3 flex w-full items-center gap-2 md:order-2 md:w-auto">
+        <Button
+          asChild
+          variant="outline"
+          className="h-9 rounded-full border-accent px-3 text-sm"
+        >
+          <Link href={`/chat/${chatId}?query=${encodeURIComponent('Génère une fiche de révision complète pour ce cours.')}`}>
+            <FileText data-icon="inline-start" />
+            Générer une fiche de révision
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          className="h-9 rounded-full border-primary px-3 text-sm"
+        >
+          <Link href={`/chat/${chatId}?query=${encodeURIComponent('Fais-moi un quiz sur ce cours.')}`}>
+            <CircleHelp data-icon="inline-start" />
+            Faire un quiz
+          </Link>
+        </Button>
       </div>
 
       {(!open || windowWidth < 768) && (

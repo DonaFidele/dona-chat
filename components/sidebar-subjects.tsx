@@ -125,7 +125,9 @@ export function SidebarSubjects() {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Matières</SidebarGroupLabel>
+      <SidebarGroupLabel className="px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/50">
+        Mes matières
+      </SidebarGroupLabel>
       <SidebarGroupAction asChild>
         <Button
           type="button"
@@ -181,6 +183,7 @@ export function SidebarSubjects() {
               </SidebarMenuButton>
               <SidebarMenuAction
                 type="button"
+                className={activeSubjectId === subject.id ? 'opacity-100' : undefined}
                 showOnHover
                 disabled={isUploading}
                 onClick={(event) => {
