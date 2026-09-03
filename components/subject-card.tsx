@@ -43,7 +43,7 @@ export function SubjectCard({
   return (
     <button
       type="button"
-      className="group relative w-full overflow-hidden rounded-2xl border bg-card p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75"
+      className="group relative w-full overflow-hidden rounded-xl border bg-card p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/60 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75"
       style={{ borderColor: `${theme.color}55` }}
       onClick={() => onOpen(subject)}
       disabled={isOpening}

@@ -81,26 +81,25 @@ export function SubjectsPage() {
   const cards = subjects.length ? subjects : [lawExample];
 
   return (
-    <main className="min-h-dvh bg-gradient-to-b from-background via-background to-muted/35 px-5 py-10 md:px-10 md:py-16">
+    <main className="min-h-dvh bg-background px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+        <header className="flex flex-col gap-8 border-b border-border/70 pb-8 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
-            <p className="mb-3 text-sm font-medium text-primary">
-              Dona-Chat · Étudier à partir de vos documents
+            <p className="mb-4 font-mono text-xs uppercase tracking-[0.22em] text-primary">
+              Dona-Chat / Tableau de bord
             </p>
-            <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-5xl">
-              Choisissez une matière pour commencer.
+            <h1 className="max-w-xl text-balance text-4xl font-semibold tracking-tight md:text-6xl">
+              Qu&apos;est-ce qu&apos;on étudie aujourd&apos;hui ?
             </h1>
-            <p className="mt-4 text-pretty text-base leading-7 text-muted-foreground md:text-lg">
-              Ouvrez un cours pour discuter avec ses documents, ou créez une
-              matière pour organiser vos révisions.
+            <p className="mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground md:text-lg">
+              Retrouvez vos matières et discutez avec les documents qui vous aident à progresser.
             </p>
           </div>
-          <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
-            <BookPlus size={17} />
-            Créer une matière
+          <Button className="w-fit gap-2 rounded-lg" onClick={() => setIsCreateOpen(true)}>
+            <BookPlus data-icon="inline-start" />
+            Nouvelle matière
           </Button>
-        </div>
+        </header>
 
         <section className="mt-12" aria-label="Vos matières">
           {isLoading && (
