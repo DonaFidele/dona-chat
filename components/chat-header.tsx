@@ -8,6 +8,7 @@ import { ModelSelector } from '@/components/model-selector';
 import { SidebarToggle } from '@/components/sidebar-toggle';
 import { Button } from '@/components/ui/button';
 import { PlusIcon, VercelIcon } from './icons';
+import { BookOpen } from 'lucide-react';
 import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
@@ -20,12 +21,14 @@ function PureChatHeader({
   selectedVisibilityType,
   isReadonly,
   session,
+  subjectName,
 }: {
   chatId: string;
   selectedModelId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   session: Session;
+  subjectName?: string | null;
 }) {
   const router = useRouter();
   const { open } = useSidebar();
@@ -33,8 +36,17 @@ function PureChatHeader({
   const { width: windowWidth } = useWindowSize();
 
   return (
-    <header className="flex sticky top-0 bg-background py-1.5 items-center px-2 md:px-2 gap-2">
+    <header className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-border/70 bg-background px-4 py-3 md:px-6">
       <SidebarToggle />
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+          <BookOpen />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate font-semibold tracking-tight">{subjectName ?? 'Dona-Chat'}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Espace d&apos;étude</p>
+        </div>
+      </div>
 
       {(!open || windowWidth < 768) && (
         <Tooltip>
