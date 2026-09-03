@@ -10,12 +10,14 @@ export function SubjectChatWrapper({
   initialMessages,
   initialSubjectId,
   session,
+  subjectName,
 }: {
   chatId: string;
   initialChatModel: string;
   initialMessages: Array<UIMessage>;
   initialSubjectId: string;
   session: Session;
+  subjectName: string;
 }) {
   return (
     <>
@@ -28,6 +30,7 @@ export function SubjectChatWrapper({
         session={session}
         autoResume={false}
         initialSubjectId={initialSubjectId}
+        subjectName={subjectName}
       />
       <DataStreamHandler id={chatId} />
     </>

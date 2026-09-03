@@ -35,6 +35,7 @@ export default async function SubjectChatPage({
       initialChatModel={initialChatModel}
       initialMessages={[]}
       initialSubjectId={subject.id}
+      subjectName={subject.name}
       session={session}
     />
   );

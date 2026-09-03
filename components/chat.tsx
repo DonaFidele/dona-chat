@@ -31,6 +31,7 @@ export function Chat({
   session,
   autoResume,
   initialSubjectId,
+  subjectName,
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -40,6 +41,7 @@ export function Chat({
   session: Session;
   autoResume: boolean;
   initialSubjectId?: string | null;
+  subjectName?: string | null;
 }) {
   const { mutate } = useSWRConfig();
 
@@ -137,6 +139,7 @@ export function Chat({
           selectedVisibilityType={initialVisibilityType}
           isReadonly={isReadonly}
           session={session}
+          subjectName={subjectName}
         />
 
         <Messages

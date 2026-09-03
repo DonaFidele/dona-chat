@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { auth } from '@/app/(auth)/auth';
 import { Chat } from '@/components/chat';
-import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
+import { getChatById, getMessagesByChatId, getSubjectById } from '@/lib/db/queries';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 import type { DBMessage } from '@/lib/db/schema';
@@ -39,6 +39,9 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const messagesFromDb = await getMessagesByChatId({
     id,
   });
+  const subject = chat.subjectId
+    ? await getSubjectById({ id: chat.subjectId, userId: chat.userId })
+    : null;
 
   function convertToUIMessages(messages: Array<DBMessage>): Array<UIMessage> {
     return messages.map((message) => ({
@@ -68,6 +71,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           session={session}
           autoResume={true}
           initialSubjectId={chat.subjectId}
+          subjectName={subject?.name}
         />
         <DataStreamHandler id={id} />
       </>
@@ -85,6 +89,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         session={session}
         autoResume={true}
         initialSubjectId={chat.subjectId}
+        subjectName={subject?.name}
       />
       <DataStreamHandler id={id} />
     </>
