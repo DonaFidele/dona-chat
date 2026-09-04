@@ -140,6 +140,19 @@ export function Chat({
           isReadonly={isReadonly}
           session={session}
           subjectName={subjectName}
+          onGenerateStudySheet={() =>
+            append({
+              role: 'user',
+              content: 'Génère une fiche de révision complète pour ce cours.',
+            })
+          }
+          onGenerateQuiz={() =>
+            append({
+              role: 'user',
+              content:
+                'Génère exactement 5 questions de quiz à choix multiple à partir des documents de ce cours. Donne quatre choix par question, puis le corrigé à la fin.',
+            })
+          }
         />
 
         <Messages
