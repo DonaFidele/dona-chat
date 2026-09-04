@@ -21,6 +21,7 @@ import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import { getActiveSubjectId, setActiveSubjectId } from '@/lib/study-subject';
+import { QuizIntro, QuizPanel } from './quiz-panel';
 
 export function Chat({
   id,
@@ -101,6 +102,7 @@ export function Chat({
   const query = searchParams.get('query');
 
   const [hasAppendedQuery, setHasAppendedQuery] = useState(false);
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
 
   useEffect(() => {
     if (query && !hasAppendedQuery) {
@@ -135,6 +137,7 @@ export function Chat({
       <div className="flex flex-col min-w-0 h-dvh bg-background">
         <ChatHeader
           chatId={id}
+          onQuiz={() => setIsQuizOpen(true)}
           selectedModelId={initialChatModel}
           selectedVisibilityType={initialVisibilityType}
           isReadonly={isReadonly}
@@ -172,6 +175,15 @@ export function Chat({
           )}
         </form>
       </div>
+
+      {isQuizOpen && (
+        <div className="fixed inset-0 z-20 flex bg-background">
+          <div className="hidden flex-1 flex-col overflow-hidden border-r border-border lg:flex">
+            <QuizIntro subjectName={subjectName ?? 'ce cours'} onStart={() => undefined} />
+          </div>
+          <QuizPanel subjectName={subjectName ?? 'ce cours'} onBack={() => setIsQuizOpen(false)} />
+        </div>
+      )}
 
       <Artifact
         chatId={id}

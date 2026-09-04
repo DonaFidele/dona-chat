@@ -27,6 +27,7 @@ function PureChatHeader({
   isReadonly,
   session,
   subjectName,
+  onQuiz,
 }: {
   chatId: string;
   selectedModelId: string;
@@ -34,6 +35,7 @@ function PureChatHeader({
   isReadonly: boolean;
   session: Session;
   subjectName?: string | null;
+  onQuiz?: () => void;
 }) {
   const router = useRouter();
   const { open } = useSidebar();
@@ -78,12 +80,12 @@ function PureChatHeader({
         <Button
           asChild
           variant="outline"
-          className="h-9 rounded-full border-primary px-3 text-sm"
+          className="h-9 rounded-full border-primary px-3 text-sm hover:bg-primary hover:text-primary-foreground"
         >
-          <Link href={`/chat/${chatId}?query=${encodeURIComponent('Fais-moi un quiz sur ce cours.')}`}>
+          <button type="button" onClick={onQuiz} className="flex items-center gap-2">
             <CircleHelp data-icon="inline-start" />
             Faire un quiz
-          </Link>
+          </button>
         </Button>
       </div>
 
@@ -126,6 +128,7 @@ export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
   return (
     prevProps.selectedModelId === nextProps.selectedModelId &&
     prevProps.subjectName === nextProps.subjectName &&
-    prevProps.chatId === nextProps.chatId
+    prevProps.chatId === nextProps.chatId &&
+    prevProps.onQuiz === nextProps.onQuiz
   );
 });
