@@ -2,7 +2,7 @@
 
 import { BookPlus, LoaderCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { setActiveSubjectId } from '@/lib/study-subject';
 import { fetcher } from '@/lib/utils';
@@ -23,12 +23,16 @@ const lawExample: SubjectCardData = {
 
 export function SubjectsPage() {
   const router = useRouter();
+  useEffect(() => {
+    setActiveSubjectId(null);
+  }, []);
   const { data, error, isLoading, mutate } = useSWR<SubjectsResponse>(
     '/api/subjects',
     fetcher,
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [openingSubjectId, setOpeningSubjectId] = useState<string | null>(null);
+  const [editingSubject, setEditingSubject] = useState<SubjectCardData | null>(null);
 
   const openSubject = async (subject: SubjectCardData) => {
     setOpeningSubjectId(subject.id ?? 'law-example');
@@ -126,16 +130,33 @@ export function SubjectsPage() {
                 subjects={cards}
                 openingSubjectId={openingSubjectId}
                 onOpen={(subject) => void openSubject(subject)}
+                onEdit={setEditingSubject}
+                onDelete={async (subject) => {
+                  if (!subject.id || !window.confirm(`Supprimer ${subject.name} ?`)) return;
+                  await fetch(`/api/subjects/${subject.id}`, { method: 'DELETE' });
+                  setActiveSubjectId(null);
+                  await mutate();
+                }}
               />
             </>
           )}
         </section>
       </div>
 
+      <CreateSubjectModal open={isCreateOpen} onOpenChange={setIsCreateOpen} onCreate={createSubject} />
       <CreateSubjectModal
-        open={isCreateOpen}
-        onOpenChange={setIsCreateOpen}
-        onCreate={createSubject}
+        open={Boolean(editingSubject)}
+        onOpenChange={(open) => !open && setEditingSubject(null)}
+        subject={editingSubject ? { name: editingSubject.name, description: editingSubject.description ?? '', color: editingSubject.color ?? '' } : null}
+        title="Modifier la matière"
+        onCreate={async (value) => {
+          if (!editingSubject?.id) return;
+          const response = await fetch(`/api/subjects/${editingSubject.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
+          if (!response.ok) throw new Error('Modification impossible');
+          setEditingSubject(null);
+          await mutate();
+          window.dispatchEvent(new Event('subjects-updated'));
+        }}
       />
     </main>
   );

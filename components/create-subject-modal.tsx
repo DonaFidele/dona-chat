@@ -26,10 +26,14 @@ export function CreateSubjectModal({
   open,
   onOpenChange,
   onCreate,
+  subject,
+  title = 'Créer une matière',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (subject: NewSubject) => Promise<void>;
+  subject?: NewSubject | null;
+  title?: string;
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -37,12 +41,16 @@ export function CreateSubjectModal({
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setName(subject?.name ?? '');
+      setDescription(subject?.description ?? '');
+      setColor(subject?.color ?? '');
+    } else {
       setName('');
       setDescription('');
       setColor('');
     }
-  }, [open]);
+  }, [open, subject]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,7 +73,7 @@ export function CreateSubjectModal({
       <AlertDialogContent>
         <form className="grid gap-5" onSubmit={handleSubmit}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Créer une matière</AlertDialogTitle>
+            <AlertDialogTitle>{title}</AlertDialogTitle>
             <AlertDialogDescription>
               Ajoutez un cours, puis importez les documents qui serviront aux
               réponses du chat.
@@ -120,7 +128,7 @@ export function CreateSubjectModal({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isCreating}>Annuler</AlertDialogCancel>
             <Button type="submit" disabled={isCreating}>
-              {isCreating ? 'Création…' : 'Créer la matière'}
+              {isCreating ? 'Enregistrement…' : subject ? 'Enregistrer' : 'Créer la matière'}
             </Button>
           </AlertDialogFooter>
         </form>
