@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWindowSize } from 'usehooks-ts';
 
-import { ModelSelector } from '@/components/model-selector';
 import { SidebarToggle } from '@/components/sidebar-toggle';
 import type { VisibilityType } from './visibility-selector';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,8 @@ function PureChatHeader({
   isReadonly,
   session,
   subjectName,
-  onQuiz,
+  onGenerateStudySheet,
+  onGenerateQuiz
 }: {
   chatId: string;
   selectedModelId: string;
@@ -35,7 +35,8 @@ function PureChatHeader({
   isReadonly: boolean;
   session: Session;
   subjectName?: string | null;
-  onQuiz?: () => void;
+  onGenerateStudySheet: () => void;
+  onGenerateQuiz: () => void;
 }) {
   const router = useRouter();
   const { open } = useSidebar();
@@ -50,14 +51,24 @@ function PureChatHeader({
           <BookOpen />
         </div>
         <div className="min-w-0">
-          <p className="truncate font-semibold tracking-tight">{subjectName ?? 'Dona-Chat'}</p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Espace d&apos;étude</p>
+          <p className="truncate font-semibold tracking-tight">
+            {subjectName ?? 'Dona-Chat'}
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Espace d&apos;étude
+          </p>
         </div>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="order-2 ml-auto text-muted-foreground" aria-label="Afficher les fichiers uploadés" title="Fichiers uploadés">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="order-2 ml-auto text-muted-foreground"
+            aria-label="Afficher les fichiers uploadés"
+            title="Fichiers uploadés"
+          >
             <FileText />
           </Button>
         </DropdownMenuTrigger>
@@ -68,24 +79,20 @@ function PureChatHeader({
 
       <div className="order-3 flex w-full items-center gap-2 md:order-2 md:w-auto">
         <Button
-          asChild
           variant="outline"
           className="h-9 rounded-full border-accent px-3 text-sm"
+          onClick={onGenerateStudySheet}
         >
-          <Link href={`/chat/${chatId}?query=${encodeURIComponent('Génère une fiche de révision complète pour ce cours.')}`}>
-            <FileText data-icon="inline-start" />
-            Générer une fiche de révision
-          </Link>
+          <FileText data-icon="inline-start" />
+          Générer une fiche de révision
         </Button>
         <Button
-          asChild
           variant="outline"
           className="h-9 rounded-full border-primary px-3 text-sm hover:bg-primary hover:text-primary-foreground"
+          onClick={onGenerateQuiz}
         >
-          <button type="button" onClick={onQuiz} className="flex items-center gap-2">
-            <CircleHelp data-icon="inline-start" />
-            Faire un quiz
-          </button>
+          <CircleHelp data-icon="inline-start" />
+          Faire un quiz
         </Button>
       </div>
 
