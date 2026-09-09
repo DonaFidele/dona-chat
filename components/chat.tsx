@@ -21,7 +21,8 @@ import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import { getActiveSubjectId, setActiveSubjectId } from '@/lib/study-subject';
-import { QuizIntro, QuizPanel } from './quiz-panel';
+import { QuizPanel, type QuizQuestion } from './quiz-panel';
+import { Button } from './ui/button';
 
 export function Chat({
   id,
@@ -103,6 +104,43 @@ export function Chat({
 
   const [hasAppendedQuery, setHasAppendedQuery] = useState(false);
   const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<Array<QuizQuestion>>([]);
+  const [quizError, setQuizError] = useState<string | null>(null);
+  const [isQuizLoading, setIsQuizLoading] = useState(false);
+
+  const generateQuiz = async () => {
+    const subjectId = getActiveSubjectId() ?? initialSubjectId;
+    if (!subjectId) {
+      toast({
+        type: 'error',
+        description: 'Choisissez une matière avant de générer un quiz.',
+      });
+      return;
+    }
+
+    setIsQuizOpen(true);
+    setQuizQuestions([]);
+    setQuizError(null);
+    setIsQuizLoading(true);
+
+    try {
+      const response = await fetch(`/api/subjects/${subjectId}/quiz`, {
+        method: 'POST',
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok)
+        throw new Error(result?.error ?? 'La génération du quiz a échoué.');
+      setQuizQuestions(result.questions);
+    } catch (error) {
+      setQuizError(
+        error instanceof Error
+          ? error.message
+          : 'La génération du quiz a échoué.',
+      );
+    } finally {
+      setIsQuizLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (query && !hasAppendedQuery) {
@@ -148,13 +186,7 @@ export function Chat({
               content: 'Génère une fiche de révision complète pour ce cours.',
             })
           }
-          onGenerateQuiz={() =>
-            append({
-              role: 'user',
-              content:
-                'Génère exactement 5 questions de quiz à choix multiple à partir des documents de ce cours. Donne quatre choix par question, puis le corrigé à la fin.',
-            })
-          }
+          onGenerateQuiz={() => void generateQuiz()}
         />
 
         <Messages
@@ -190,10 +222,27 @@ export function Chat({
 
       {isQuizOpen && (
         <div className="fixed inset-0 z-20 flex bg-background">
-          <div className="hidden flex-1 flex-col overflow-hidden border-r border-border lg:flex">
-            <QuizIntro subjectName={subjectName ?? 'ce cours'} onStart={() => undefined} />
-          </div>
-          <QuizPanel subjectName={subjectName ?? 'ce cours'} onBack={() => setIsQuizOpen(false)} />
+          {isQuizLoading && (
+            <div className="m-auto text-sm text-muted-foreground">
+              Génération des 5 questions à partir des documents du cours…
+            </div>
+          )}
+          {quizError && (
+            <div className="m-auto max-w-md space-y-4 text-center">
+              <p className="text-sm text-destructive">{quizError}</p>
+              <Button onClick={() => void generateQuiz()}>Réessayer</Button>
+              <Button variant="ghost" onClick={() => setIsQuizOpen(false)}>
+                Retour au chat
+              </Button>
+            </div>
+          )}
+          {!isQuizLoading && !quizError && quizQuestions.length === 5 && (
+            <QuizPanel
+              subjectName={subjectName ?? 'ce cours'}
+              questions={quizQuestions}
+              onBack={() => setIsQuizOpen(false)}
+            />
+          )}
         </div>
       )}
 

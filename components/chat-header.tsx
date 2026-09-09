@@ -27,7 +27,7 @@ function PureChatHeader({
   session,
   subjectName,
   onGenerateStudySheet,
-  onGenerateQuiz
+  onGenerateQuiz,
 }: {
   chatId: string;
   selectedModelId: string;
@@ -136,6 +136,6 @@ export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
     prevProps.selectedModelId === nextProps.selectedModelId &&
     prevProps.subjectName === nextProps.subjectName &&
     prevProps.chatId === nextProps.chatId &&
-    prevProps.onQuiz === nextProps.onQuiz
+    prevProps.isReadonly === nextProps.isReadonly
   );
 });

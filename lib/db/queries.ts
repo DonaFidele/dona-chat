@@ -951,6 +951,53 @@ export async function searchSimilarChunks(
   }
 }
 
+export async function getCourseChunks({
+  userId,
+  subjectId,
+  limit = 15,
+}: {
+  userId: string;
+  subjectId: string;
+  limit?: number;
+}) {
+  try {
+    const candidates = await dbClient
+      .select({
+        chunkContent: resourceChunk.content,
+        resourceType: resource.sourceType,
+        resourceUri: resource.sourceUri,
+      })
+      .from(resourceChunk)
+      .innerJoin(resource, eq(resourceChunk.resourceId, resource.id))
+      .where(
+        and(
+          like(resource.sourceUri, `%/uploads/${userId}/%`),
+          eq(resource.subjectId, subjectId),
+        ),
+      )
+      .orderBy(desc(resource.updatedAt))
+      .limit(limit * 5);
+
+    const chunksPerSource = new Map<string, number>();
+
+    return candidates
+      .filter((candidate) => {
+        const count = chunksPerSource.get(candidate.resourceUri) ?? 0;
+        if (count >= 3) return false;
+
+        chunksPerSource.set(candidate.resourceUri, count + 1);
+        return true;
+      })
+      .slice(0, limit);
+  } catch (error) {
+    console.error('Course chunk retrieval error:', error);
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get course document chunks',
+    );
+  }
+}
+
 export async function getUploadedResourcesByUserId({
   userId,
   limit = 500,
