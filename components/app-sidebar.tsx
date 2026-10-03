@@ -31,7 +31,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               className="flex flex-row gap-3 items-center"
             >
               <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                Dona-Chat
+                Smart Class
+              </span>
+              <span className="hidden text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/45 sm:inline">
+                classroom workspace
               </span>
             </Link>
 

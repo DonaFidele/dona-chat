@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen } from 'lucide-react';
+import { BookOpen, CalendarDays, FileText } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -153,10 +153,16 @@ export function SidebarSubjects() {
                   style={{ backgroundColor: subject.color ?? 'hsl(var(--sidebar-primary))' }}
                   aria-hidden="true"
                 />
-                <BookOpen className="text-sidebar-foreground/65 group-data-[active=true]/subject:text-sidebar-primary" />
-                <span className="truncate">{subject.name}</span>
-                <span className="ml-auto mr-5 text-xs text-sidebar-foreground/50">
-                  {subject.documentCount}
+                <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+                  <span className="flex w-full items-center gap-2">
+                    <BookOpen className="shrink-0 text-sidebar-foreground/65 group-data-[active=true]/subject:text-sidebar-primary" />
+                    <span className="truncate font-medium">{subject.name}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 pl-6 text-[11px] text-sidebar-foreground/50 group-data-[active=true]/subject:text-sidebar-primary/75">
+                    <FileText /> {subject.documentCount} document{subject.documentCount === 1 ? '' : 's'}
+                    <span aria-hidden="true">·</span>
+                    <CalendarDays /> à réviser
+                  </span>
                 </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
