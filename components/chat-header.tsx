@@ -136,6 +136,8 @@ export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
     prevProps.selectedModelId === nextProps.selectedModelId &&
     prevProps.subjectName === nextProps.subjectName &&
     prevProps.chatId === nextProps.chatId &&
-    prevProps.isReadonly === nextProps.isReadonly
+    prevProps.isReadonly === nextProps.isReadonly &&
+    prevProps.onGenerateStudySheet === nextProps.onGenerateStudySheet &&
+    prevProps.onGenerateQuiz === nextProps.onGenerateQuiz
   );
 });
