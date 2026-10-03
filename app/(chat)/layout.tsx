@@ -23,12 +23,22 @@ export default async function Layout({
       />
       <SidebarProvider
         defaultOpen={!isCollapsed}
-        className="min-h-dvh flex-col bg-[#102827] min-[821px]:flex-row min-[821px]:p-[14px]"
+        className="h-dvh min-h-dvh flex-col items-center overflow-hidden bg-[#102827] p-3 min-[821px]:items-stretch min-[821px]:p-[14px]"
       >
-        <AppSidebar user={session?.user} />
-        <SidebarInset className="min-h-0 flex-1 overflow-hidden bg-background min-[821px]:rounded-xl min-[821px]:border min-[821px]:border-[#35504d]">
-          {children}
-        </SidebarInset>
+        <div className="flex min-h-0 w-full max-w-[390px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-[#35504d] bg-background shadow-2xl shadow-black/20 min-[821px]:max-w-none min-[821px]:rounded-xl">
+          <header className="hidden shrink-0 border-b border-border/80 px-6 py-5 min-[821px]:block">
+            <h1 className="text-xl font-medium tracking-tight">Smart Class</h1>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Vos matières, documents et révisions au même endroit.
+            </p>
+          </header>
+          <div className="flex min-h-0 flex-1 flex-col min-[821px]:flex-row">
+            <AppSidebar user={session?.user} />
+            <SidebarInset className="min-h-0 flex-1 overflow-hidden bg-background">
+              {children}
+            </SidebarInset>
+          </div>
+        </div>
       </SidebarProvider>
     </>
   );

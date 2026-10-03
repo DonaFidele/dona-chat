@@ -71,7 +71,7 @@ export function SubjectsPage() {
   const subjects = data?.subjects ?? [];
 
   return (
-    <main className="min-h-dvh bg-background px-5 py-8 md:px-10 md:py-12">
+    <main className="h-full min-h-0 overflow-y-auto bg-background px-5 py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col gap-8 border-b border-border/70 pb-8 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">

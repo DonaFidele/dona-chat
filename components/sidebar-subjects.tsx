@@ -86,28 +86,25 @@ export function SidebarSubjects({
 
   if (variant === 'mobile') {
     return (
-      <nav
-        aria-label="Matières"
-        className="flex min-w-0 items-center gap-2 overflow-hidden px-3 py-2"
-      >
+      <nav aria-label="Matières" className="min-w-0 px-3 pb-3">
         <Button
           variant="outline"
-          size="icon"
-          className="size-9 shrink-0 border-sidebar-border bg-transparent"
+          className="mb-2 h-9 w-full border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={createSubject}
-          aria-label="Créer une matière"
-          title="Créer une matière"
         >
-          <Plus />
+          <Plus /> Nouvelle matière
         </Button>
-        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-0 gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {data?.subjects.map((subject) => (
             <Button
               key={subject.id}
               type="button"
               variant="ghost"
-              className="h-auto min-h-12 min-w-36 shrink-0 items-start rounded-md border border-transparent px-3 py-2 text-left hover:bg-sidebar-accent"
-              data-active={activeSubjectId === subject.id}
+              className={`h-auto min-h-12 min-w-36 shrink-0 items-start rounded-md border border-transparent px-3 py-2 text-left hover:bg-sidebar-accent ${
+                activeSubjectId === subject.id
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
+                  : ''
+              }`}
               onClick={() => openSubjectChat(subject)}
             >
               <span className="flex min-w-0 flex-col gap-0.5">
@@ -124,7 +121,7 @@ export function SidebarSubjects({
                     {subject.name}
                   </span>
                 </span>
-                <span className="pl-[18px] text-[10px] text-sidebar-foreground/55">
+                <span className="pl-[18px] text-[10px] opacity-70">
                   {subject.documentCount} document
                   {subject.documentCount === 1 ? '' : 's'}
                 </span>
@@ -150,9 +147,7 @@ export function SidebarSubjects({
       >
         <Plus /> Nouvelle matière
       </Button>
-      <SidebarGroupLabel className="px-0 font-mono text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/50">
-        Matières
-      </SidebarGroupLabel>
+      <SidebarGroupLabel className="sr-only">Matières</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {data?.subjects.map((subject) => (

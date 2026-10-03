@@ -174,7 +174,7 @@ export function Chat({
   return (
     <>
       <div className="flex h-full min-h-0 min-w-0 flex-col bg-background min-[821px]:flex-row">
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <ChatHeader subjectName={subjectName} />
 
           <Messages
@@ -188,7 +188,7 @@ export function Chat({
             isArtifactVisible={isArtifactVisible}
           />
 
-          <form className="mx-auto flex w-full max-w-4xl gap-2 px-5 pb-4 pt-2 md:px-6 md:pb-5">
+          <form className="mx-auto flex w-full shrink-0 max-w-4xl gap-2 border-t border-border/60 bg-background px-5 pb-4 pt-2 md:px-6 md:pb-5">
             {!isReadonly && (
               <MultimodalInput
                 chatId={id}

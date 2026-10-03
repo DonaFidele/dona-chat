@@ -340,11 +340,11 @@ function PureMultimodalInput({
       <Textarea
         data-testid="multimodal-input"
         ref={textareaRef}
-        placeholder="Pose une question sur les documents de cette matière…"
+        placeholder="Posez une question sur les documents du cours…"
         value={input}
         onChange={handleInput}
         className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] resize-none overflow-hidden rounded-md border-border bg-transparent pb-10 !text-base shadow-none focus-visible:ring-1',
+          'min-h-[24px] max-h-[25dvh] resize-none overflow-hidden rounded-md border-border bg-transparent pb-10 !text-base shadow-none focus-visible:ring-1',
           className,
         )}
         rows={2}
