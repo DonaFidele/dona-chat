@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, CircleHelp } from 'lucide-react';
+import { ArrowLeft, CircleHelp, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,12 @@ export type QuizQuestion = {
   question: string;
   answers: string[];
   correct: number;
+  source?: {
+    documentId: string;
+    name: string;
+    page: number | null;
+    snippet: string;
+  } | null;
 };
 
 export function QuizPanel({
@@ -104,11 +110,31 @@ export function QuizPanel({
           })}
         </div>
         {submitted && (
-          <p className="text-sm text-muted-foreground">
-            {selected === question.correct
-              ? 'Bonne réponse.'
-              : `La bonne réponse était : ${question.answers[question.correct]}`}
-          </p>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              {selected === question.correct
+                ? 'Bonne réponse.'
+                : `La bonne réponse était : ${question.answers[question.correct]}`}
+            </p>
+            {question.source && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent('open-source-viewer', {
+                      detail: question.source,
+                    }),
+                  )
+                }
+              >
+                <FileText size={14} />
+                Voir la source
+                {question.source.page ? ` p. ${question.source.page}` : ''}
+              </Button>
+            )}
+          </div>
         )}
         <Button
           onClick={

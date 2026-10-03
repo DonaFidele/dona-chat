@@ -20,6 +20,10 @@ export type NewSubject = {
   name: string;
   description?: string;
   color?: string;
+  teacher?: string;
+  examDate?: string;
+  explanationLevel?: 'normal' | 'simple' | 'eli12';
+  language?: 'fr' | 'en';
 };
 
 export function CreateSubjectModal({
@@ -38,6 +42,12 @@ export function CreateSubjectModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('');
+  const [teacher, setTeacher] = useState('');
+  const [examDate, setExamDate] = useState('');
+  const [explanationLevel, setExplanationLevel] = useState<
+    'normal' | 'simple' | 'eli12'
+  >('normal');
+  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
@@ -45,10 +55,18 @@ export function CreateSubjectModal({
       setName(subject?.name ?? '');
       setDescription(subject?.description ?? '');
       setColor(subject?.color ?? '');
+      setTeacher(subject?.teacher ?? '');
+      setExamDate(subject?.examDate ?? '');
+      setExplanationLevel(subject?.explanationLevel ?? 'normal');
+      setLanguage(subject?.language ?? 'fr');
     } else {
       setName('');
       setDescription('');
       setColor('');
+      setTeacher('');
+      setExamDate('');
+      setExplanationLevel('normal');
+      setLanguage('fr');
     }
   }, [open, subject]);
 
@@ -60,8 +78,12 @@ export function CreateSubjectModal({
     try {
       await onCreate({
         name: name.trim(),
-        description: description.trim(),
-        color,
+        description: description.trim() || undefined,
+        color: color || undefined,
+        teacher: teacher.trim() || undefined,
+        examDate: examDate || undefined,
+        explanationLevel,
+        language,
       });
     } finally {
       setIsCreating(false);
@@ -85,13 +107,76 @@ export function CreateSubjectModal({
             <Input
               id="subject-name"
               autoFocus
-              maxLength={100}
+              minLength={3}
+              maxLength={60}
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Ex. Mathématiques"
               required
             />
           </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="subject-teacher">Enseignant·e (facultatif)</Label>
+            <Input
+              id="subject-teacher"
+              maxLength={120}
+              value={teacher}
+              onChange={(event) => setTeacher(event.target.value)}
+              placeholder="Ex. Mme Martin"
+            />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="subject-exam-date">Date d’examen</Label>
+              <Input
+                id="subject-exam-date"
+                type="date"
+                value={examDate}
+                onChange={(event) => setExamDate(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="subject-language">Langue des explications</Label>
+              <select
+                id="subject-language"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={language}
+                onChange={(event) =>
+                  setLanguage(event.target.value as 'fr' | 'en')
+                }
+              >
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+
+          <fieldset className="grid gap-2">
+            <legend className="text-sm font-medium">
+              Niveau d’explication
+            </legend>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                ['normal', 'Normal'],
+                ['simple', 'Simple'],
+                ['eli12', 'Comme à 12 ans'],
+              ].map(([value, label]) => (
+                <Button
+                  key={value}
+                  type="button"
+                  variant={explanationLevel === value ? 'default' : 'outline'}
+                  className="h-auto min-h-10 px-2 text-xs"
+                  onClick={() =>
+                    setExplanationLevel(value as 'normal' | 'simple' | 'eli12')
+                  }
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </fieldset>
 
           <div className="grid gap-2">
             <Label htmlFor="subject-description">Description courte</Label>
@@ -128,7 +213,11 @@ export function CreateSubjectModal({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isCreating}>Annuler</AlertDialogCancel>
             <Button type="submit" disabled={isCreating}>
-              {isCreating ? 'Enregistrement…' : subject ? 'Enregistrer' : 'Créer la matière'}
+              {isCreating
+                ? 'Enregistrement…'
+                : subject
+                  ? 'Enregistrer'
+                  : 'Créer la matière'}
             </Button>
           </AlertDialogFooter>
         </form>

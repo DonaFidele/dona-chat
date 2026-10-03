@@ -3,7 +3,6 @@ import {
   archiveSubject,
   getSubjectById,
   permanentlyDeleteSubject,
-  restoreSubject,
   updateSubject,
 } from '@/lib/db/queries';
 import { z } from 'zod';
@@ -16,6 +15,10 @@ const subjectSchema = z.object({
     .regex(/^#[0-9a-fA-F]{6}$/)
     .nullable()
     .optional(),
+  teacher: z.string().trim().max(120).nullable().optional(),
+  examDate: z.string().date().nullable().optional(),
+  explanationLevel: z.enum(['normal', 'simple', 'eli12']).optional(),
+  language: z.enum(['fr', 'en']).optional(),
 });
 
 async function owner(id: string) {

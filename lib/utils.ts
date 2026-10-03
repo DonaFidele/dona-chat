@@ -87,5 +87,7 @@ export function getTrailingMessageId({
 }
 
 export function sanitizeText(text: string) {
-  return text.replace('<has_function_call>', '');
+  return text
+    .replace('<has_function_call>', '')
+    .replace(/\s*\[\[c:[0-9a-f-]{36}\]\]/gi, '');
 }

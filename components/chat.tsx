@@ -215,6 +215,10 @@ export function Chat({
             })
           }
           onGenerateQuiz={() => void generateQuiz()}
+          subjectId={initialSubjectId}
+          onAskSavedQuestion={(question) =>
+            append({ role: 'user', content: question })
+          }
         />
       </div>
 

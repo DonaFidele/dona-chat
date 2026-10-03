@@ -49,7 +49,12 @@ export function isKnowledgeFile(file: Pick<File, 'name' | 'type'>) {
   );
 }
 
-async function extractText(file: File): Promise<string> {
+type ExtractedSection = {
+  content: string;
+  page: number | null;
+};
+
+async function extractSections(file: File): Promise<Array<ExtractedSection>> {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   if (
@@ -57,8 +62,30 @@ async function extractText(file: File): Promise<string> {
     file.name.toLowerCase().endsWith('.pdf')
   ) {
     try {
-      const result = await pdf(buffer);
-      return result.text;
+      let pageNumber = 0;
+      const result = await pdf(buffer, {
+        pagerender: async (page: {
+          getTextContent: () => Promise<{
+            items: Array<{ str?: string; transform?: Array<number> }>;
+          }>;
+        }) => {
+          pageNumber += 1;
+          const textContent = await page.getTextContent();
+          return textContent.items
+            .map((item) => item.str ?? '')
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        },
+      });
+      const pages = String(result.text)
+        .split(/\n\n/)
+        .map((content, index) => ({ content: content.trim(), page: index + 1 }))
+        .filter((section) => section.content.length > 0);
+
+      return pages.length
+        ? pages
+        : [{ content: result.text.trim(), page: pageNumber || 1 }];
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : '';
 
@@ -84,11 +111,16 @@ async function extractText(file: File): Promise<string> {
     const result = await mammoth.extractRawText({ buffer });
 
     if (result.value.trim()) {
-      return result.value;
+      return [{ content: result.value, page: null }];
     }
 
     const htmlResult = await mammoth.convertToHtml({ buffer });
-    return htmlResult.value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+    return [
+      {
+        content: htmlResult.value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' '),
+        page: null,
+      },
+    ];
   }
 
   const text = buffer.toString('utf8');
@@ -98,27 +130,35 @@ async function extractText(file: File): Promise<string> {
     file.name.toLowerCase().endsWith('.json')
   ) {
     try {
-      return JSON.stringify(JSON.parse(text), null, 2);
+      return [
+        { content: JSON.stringify(JSON.parse(text), null, 2), page: null },
+      ];
     } catch {
       throw new Error('The JSON file is invalid');
     }
   }
 
-  return text;
+  return [{ content: text, page: null }];
 }
 
 export async function indexUploadedFile({
   file,
   sourceUri,
   subjectId,
+  userId,
 }: {
   file: File;
   sourceUri: string;
   subjectId?: string;
+  userId: string;
 }) {
-  const content = (await extractText(file)).trim();
+  const sections = await extractSections(file);
+  const content = sections
+    .map((section) => section.content)
+    .join('\n\n')
+    .trim();
 
-  if (!content) {
+  if (!content || sections.length === 0) {
     throw new Error('No readable text was found in this file');
   }
 
@@ -126,15 +166,33 @@ export async function indexUploadedFile({
     chunkSize: 1200,
     chunkOverlap: 250,
   });
-  const chunks = await splitter.splitText(content);
+  const chunksWithPages = (
+    await Promise.all(
+      sections.map(async (section) =>
+        (
+          await splitter.splitText(section.content)
+        ).map((content) => ({
+          content,
+          pageStart: section.page,
+          pageEnd: section.page,
+        })),
+      ),
+    )
+  ).flat();
 
   const embeddings: Array<number[]> = [];
   const embeddingBatchSize = 100;
 
-  for (let index = 0; index < chunks.length; index += embeddingBatchSize) {
+  for (
+    let index = 0;
+    index < chunksWithPages.length;
+    index += embeddingBatchSize
+  ) {
     const { embeddings: batchEmbeddings } = await embedMany({
       model: myProvider.textEmbeddingModel('embedding-model'),
-      values: chunks.slice(index, index + embeddingBatchSize),
+      values: chunksWithPages
+        .slice(index, index + embeddingBatchSize)
+        .map((chunk) => chunk.content),
     });
     embeddings.push(...batchEmbeddings);
   }
@@ -143,11 +201,19 @@ export async function indexUploadedFile({
     sourceUri,
     subjectId,
     contentHash: createHash('sha256').update(content).digest('hex'),
-    chunksWithEmbeddings: chunks.map((chunk, index) => ({
-      content: chunk,
+    chunksWithEmbeddings: chunksWithPages.map((chunk, index) => ({
+      content: chunk.content,
       embedding: embeddings[index],
+      pageStart: chunk.pageStart,
+      pageEnd: chunk.pageEnd,
     })),
+    userId,
+    originalName: file.name,
+    contentType: file.type || 'application/octet-stream',
+    sizeBytes: file.size,
+    pageCount:
+      sections.filter((section) => section.page !== null).length || null,
   });
 
-  return { chunks: chunks.length };
+  return { chunks: chunksWithPages.length };
 }

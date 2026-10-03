@@ -25,11 +25,33 @@ type Subject = {
   name: string;
   description: string | null;
   color: string | null;
+  teacher: string | null;
+  examDate: string | null;
+  explanationLevel: 'normal' | 'simple' | 'eli12';
+  language: 'fr' | 'en';
   documentCount: number;
   latestChatId: string | null;
 };
 
 type SubjectsResponse = { subjects: Array<Subject> };
+
+function examLabel(examDate: string | null) {
+  if (!examDate) return null;
+
+  const today = new Date();
+  const todayUtc = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const examUtc = Date.parse(`${examDate}T00:00:00Z`);
+  const days = Math.round((examUtc - todayUtc) / 86_400_000);
+
+  if (days === 0) return 'Examen aujourd’hui';
+  if (days === 1) return 'Examen dans 1 jour';
+  if (days > 1) return `Examen dans ${days} jours`;
+  return 'Examen passé';
+}
 
 export function SidebarSubjects({
   variant = 'sidebar',
@@ -122,8 +144,8 @@ export function SidebarSubjects({
                   </span>
                 </span>
                 <span className="pl-[18px] text-[10px] opacity-70">
-                  {subject.documentCount} document
-                  {subject.documentCount === 1 ? '' : 's'}
+                  {examLabel(subject.examDate) ??
+                    `${subject.documentCount} document${subject.documentCount === 1 ? '' : 's'}`}
                 </span>
               </span>
             </Button>
@@ -176,6 +198,11 @@ export function SidebarSubjects({
                   <span className="flex items-center gap-1.5 pl-5 text-[10px] text-sidebar-foreground/50 group-data-[active=true]/subject:text-sidebar-primary/75">
                     <FileText className="size-3" /> {subject.documentCount}{' '}
                     document{subject.documentCount === 1 ? '' : 's'}
+                    {examLabel(subject.examDate) && (
+                      <span className="truncate">
+                        · {examLabel(subject.examDate)}
+                      </span>
+                    )}
                   </span>
                 </span>
               </SidebarMenuButton>

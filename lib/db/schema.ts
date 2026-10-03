@@ -9,6 +9,9 @@ import {
   primaryKey,
   foreignKey,
   boolean,
+  date,
+  integer,
+  time,
   vector,
   index,
 } from 'drizzle-orm/pg-core';
@@ -26,6 +29,16 @@ export const subject = pgTable('Subject', {
   name: varchar('name', { length: 100 }).notNull(),
   description: varchar('description', { length: 180 }),
   color: varchar('color', { length: 32 }),
+  teacher: varchar('teacher', { length: 120 }),
+  examDate: date('exam_date'),
+  explanationLevel: varchar('explanation_level', {
+    enum: ['normal', 'simple', 'eli12'],
+  })
+    .notNull()
+    .default('normal'),
+  language: varchar('language', { enum: ['fr', 'en'] })
+    .notNull()
+    .default('fr'),
   archivedAt: timestamp('archived_at'),
   userId: uuid('user_id')
     .notNull()
@@ -35,6 +48,81 @@ export const subject = pgTable('Subject', {
 });
 
 export type Subject = InferSelectModel<typeof subject>;
+
+export const note = pgTable(
+  'StudyNote',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id')
+      .notNull()
+      .references(() => subject.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    starred: boolean('starred').notNull().default(false),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    subjectIndex: index('study_note_subject_index').on(
+      table.userId,
+      table.subjectId,
+    ),
+  }),
+);
+
+export type StudyNote = InferSelectModel<typeof note>;
+
+export const savedQuestion = pgTable(
+  'SavedQuestion',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id')
+      .notNull()
+      .references(() => subject.id, { onDelete: 'cascade' }),
+    question: text('question').notNull(),
+    resolved: boolean('resolved').notNull().default(false),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    subjectIndex: index('saved_question_subject_index').on(
+      table.userId,
+      table.subjectId,
+    ),
+  }),
+);
+
+export type SavedQuestion = InferSelectModel<typeof savedQuestion>;
+
+export const scheduleSlot = pgTable(
+  'ScheduleSlot',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id')
+      .notNull()
+      .references(() => subject.id, { onDelete: 'cascade' }),
+    weekday: integer('weekday').notNull(),
+    startTime: time('start_time').notNull(),
+    endTime: time('end_time').notNull(),
+    location: varchar('location', { length: 160 }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    subjectIndex: index('schedule_slot_subject_index').on(
+      table.userId,
+      table.subjectId,
+    ),
+  }),
+);
+
+export type ScheduleSlot = InferSelectModel<typeof scheduleSlot>;
 
 export const subjectShare = pgTable('SubjectShare', {
   token: uuid('token').primaryKey().notNull().defaultRandom(),
@@ -85,6 +173,10 @@ export type MessageSource = {
   name: string;
   uri: string;
   similarity: number;
+  chunkId?: string;
+  documentId?: string;
+  page?: number | null;
+  snippet?: string;
 };
 
 export const message = pgTable('Message_v2', {
@@ -219,9 +311,20 @@ export const resource = pgTable('Resource', {
   sourceType: varchar('source_type', { length: 50 }).notNull(), // 'file', 'url', 'github'
   sourceUri: text('source_uri').notNull().unique(), // file path, URL, or repo identifier
   contentHash: text('content_hash').notNull(), // SHA256 hash of content
+  userId: uuid('user_id').references(() => user.id, { onDelete: 'cascade' }),
   subjectId: uuid('subject_id').references(() => subject.id, {
     onDelete: 'set null',
   }),
+  originalName: text('original_name'),
+  contentType: varchar('content_type', { length: 120 }),
+  sizeBytes: integer('size_bytes'),
+  pageCount: integer('page_count'),
+  status: varchar('status', {
+    enum: ['pending', 'processing', 'ready', 'failed'],
+  })
+    .notNull()
+    .default('ready'),
+  errorMessage: text('error_message'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 });
@@ -236,6 +339,15 @@ export const resourceChunk = pgTable(
       .notNull()
       .references(() => resource.id, { onDelete: 'cascade' }),
     content: text('content').notNull(),
+    userId: uuid('user_id').references(() => user.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id').references(() => subject.id, {
+      onDelete: 'cascade',
+    }),
+    pageStart: integer('page_start'),
+    pageEnd: integer('page_end'),
+    headingPath: text('heading_path'),
+    tokenCount: integer('token_count'),
+    ocrConfidence: integer('ocr_confidence'),
     embedding: vector('embedding', { dimensions: 1536 }), // OpenAI text-embedding-ada-002 dimensions
   },
   (table) => ({

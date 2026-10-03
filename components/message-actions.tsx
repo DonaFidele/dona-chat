@@ -21,8 +21,11 @@ import { fetcher } from '@/lib/utils';
 
 type PersistedSource = {
   name: string;
-  uri: string;
-  similarity: number;
+  uri?: string;
+  similarity?: number;
+  documentId?: string;
+  page?: number | null;
+  snippet?: string;
 };
 
 type MessageSourcesResponse = { sources: Array<PersistedSource> };
@@ -56,6 +59,8 @@ export function PureMessageActions({
     (source) => source.name,
   );
   const displayedSourceNames = persistedSourceNames ?? sourceNames;
+  const displayedSources: Array<PersistedSource> =
+    persistedSources?.sources ?? sourceNames.map((name) => ({ name }));
 
   if (isLoading) return null;
   if (message.role === 'user') return null;
@@ -205,6 +210,16 @@ export function PureMessageActions({
                 type="button"
                 className="py-1 px-2 h-fit text-muted-foreground"
                 variant="outline"
+                onClick={() => {
+                  const source = displayedSources[0];
+                  if (!source?.documentId) return;
+                  window.dispatchEvent(
+                    new CustomEvent('open-source-viewer', {
+                      detail: source,
+                    }),
+                  );
+                }}
+                disabled={!displayedSources.some((source) => source.documentId)}
               >
                 <FileIcon size={14} />
                 {displayedSourceNames.length}
@@ -214,9 +229,31 @@ export function PureMessageActions({
               <p className="mb-1 font-medium">
                 Documents utiles à cette réponse
               </p>
-              <ul className="list-disc space-y-1 pl-4">
-                {displayedSourceNames.map((name) => (
-                  <li key={name}>{name}</li>
+              <ul className="list-disc space-y-2 pl-4">
+                {displayedSources.map((source, index) => (
+                  <li key={`${source.name}-${index}`}>
+                    <button
+                      type="button"
+                      className="text-left underline-offset-2 hover:underline disabled:no-underline"
+                      disabled={!source.documentId}
+                      onClick={() => {
+                        if (!source.documentId) return;
+                        window.dispatchEvent(
+                          new CustomEvent('open-source-viewer', {
+                            detail: source,
+                          }),
+                        );
+                      }}
+                    >
+                      {source.name}
+                      {source.page ? ` · p. ${source.page}` : ''}
+                    </button>
+                    {source.snippet && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {source.snippet}
+                      </p>
+                    )}
+                  </li>
                 ))}
               </ul>
             </TooltipContent>

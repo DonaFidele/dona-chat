@@ -10,8 +10,10 @@ import {
   gt,
   gte,
   inArray,
+  isNull,
   like,
   lt,
+  or,
   type SQL,
   sql,
 } from 'drizzle-orm';
@@ -34,6 +36,9 @@ import {
   resource,
   resourceChunk,
   subjectShare,
+  note,
+  savedQuestion,
+  scheduleSlot,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -145,11 +150,19 @@ export async function createSubject({
   name,
   description,
   color,
+  teacher,
+  examDate,
+  explanationLevel,
+  language,
   userId,
 }: {
   name: string;
   description?: string | null;
   color?: string | null;
+  teacher?: string | null;
+  examDate?: string | null;
+  explanationLevel?: 'normal' | 'simple' | 'eli12';
+  language?: 'fr' | 'en';
   userId: string;
 }) {
   try {
@@ -159,6 +172,10 @@ export async function createSubject({
         name,
         description,
         color,
+        teacher,
+        examDate,
+        explanationLevel,
+        language,
         userId,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -259,6 +276,10 @@ export async function getSubjectsByUserId({ userId }: { userId: string }) {
         name: subject.name,
         description: subject.description,
         color: subject.color,
+        teacher: subject.teacher,
+        examDate: subject.examDate,
+        explanationLevel: subject.explanationLevel,
+        language: subject.language,
         createdAt: subject.createdAt,
         documentCount: count(resource.id),
       })
@@ -294,16 +315,33 @@ export async function updateSubject({
   name,
   description,
   color,
+  teacher,
+  examDate,
+  explanationLevel,
+  language,
 }: {
   id: string;
   userId: string;
   name: string;
   description?: string | null;
   color?: string | null;
+  teacher?: string | null;
+  examDate?: string | null;
+  explanationLevel?: 'normal' | 'simple' | 'eli12';
+  language?: 'fr' | 'en';
 }) {
   const [updated] = await dbClient
     .update(subject)
-    .set({ name, description, color, updatedAt: new Date() })
+    .set({
+      name,
+      description,
+      color,
+      teacher,
+      examDate,
+      explanationLevel,
+      language,
+      updatedAt: new Date(),
+    })
     .where(and(eq(subject.id, id), eq(subject.userId, userId)))
     .returning();
   return updated;
@@ -331,6 +369,208 @@ export async function restoreSubject({
     .where(and(eq(subject.id, id), eq(subject.userId, userId)))
     .returning();
   return restored;
+}
+
+export async function getStudyNotes({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  return dbClient
+    .select()
+    .from(note)
+    .where(and(eq(note.userId, userId), eq(note.subjectId, subjectId)))
+    .orderBy(desc(note.starred), desc(note.updatedAt));
+}
+
+export async function createStudyNote({
+  userId,
+  subjectId,
+  content,
+}: {
+  userId: string;
+  subjectId: string;
+  content: string;
+}) {
+  const [createdNote] = await dbClient
+    .insert(note)
+    .values({ userId, subjectId, content })
+    .returning();
+  return createdNote;
+}
+
+export async function updateStudyNote({
+  id,
+  userId,
+  subjectId,
+  content,
+  starred,
+}: {
+  id: string;
+  userId: string;
+  subjectId: string;
+  content?: string;
+  starred?: boolean;
+}) {
+  const [updatedNote] = await dbClient
+    .update(note)
+    .set({ content, starred, updatedAt: new Date() })
+    .where(
+      and(
+        eq(note.id, id),
+        eq(note.userId, userId),
+        eq(note.subjectId, subjectId),
+      ),
+    )
+    .returning();
+  return updatedNote;
+}
+
+export async function deleteStudyNote({
+  id,
+  userId,
+  subjectId,
+}: {
+  id: string;
+  userId: string;
+  subjectId: string;
+}) {
+  const [deletedNote] = await dbClient
+    .delete(note)
+    .where(
+      and(
+        eq(note.id, id),
+        eq(note.userId, userId),
+        eq(note.subjectId, subjectId),
+      ),
+    )
+    .returning();
+  return deletedNote;
+}
+
+export async function getSavedQuestions({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  return dbClient
+    .select()
+    .from(savedQuestion)
+    .where(
+      and(
+        eq(savedQuestion.userId, userId),
+        eq(savedQuestion.subjectId, subjectId),
+      ),
+    )
+    .orderBy(asc(savedQuestion.resolved), desc(savedQuestion.createdAt));
+}
+
+export async function createSavedQuestion({
+  userId,
+  subjectId,
+  question,
+}: {
+  userId: string;
+  subjectId: string;
+  question: string;
+}) {
+  const [createdQuestion] = await dbClient
+    .insert(savedQuestion)
+    .values({ userId, subjectId, question })
+    .returning();
+  return createdQuestion;
+}
+
+export async function updateSavedQuestion({
+  id,
+  userId,
+  subjectId,
+  resolved,
+}: {
+  id: string;
+  userId: string;
+  subjectId: string;
+  resolved: boolean;
+}) {
+  const [updatedQuestion] = await dbClient
+    .update(savedQuestion)
+    .set({ resolved })
+    .where(
+      and(
+        eq(savedQuestion.id, id),
+        eq(savedQuestion.userId, userId),
+        eq(savedQuestion.subjectId, subjectId),
+      ),
+    )
+    .returning();
+  return updatedQuestion;
+}
+
+export async function getScheduleSlots({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  return dbClient
+    .select()
+    .from(scheduleSlot)
+    .where(
+      and(
+        eq(scheduleSlot.userId, userId),
+        eq(scheduleSlot.subjectId, subjectId),
+      ),
+    )
+    .orderBy(asc(scheduleSlot.weekday), asc(scheduleSlot.startTime));
+}
+
+export async function createScheduleSlot({
+  userId,
+  subjectId,
+  weekday,
+  startTime,
+  endTime,
+  location,
+}: {
+  userId: string;
+  subjectId: string;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  location?: string | null;
+}) {
+  const [createdSlot] = await dbClient
+    .insert(scheduleSlot)
+    .values({ userId, subjectId, weekday, startTime, endTime, location })
+    .returning();
+  return createdSlot;
+}
+
+export async function deleteScheduleSlot({
+  id,
+  userId,
+  subjectId,
+}: {
+  id: string;
+  userId: string;
+  subjectId: string;
+}) {
+  const [deletedSlot] = await dbClient
+    .delete(scheduleSlot)
+    .where(
+      and(
+        eq(scheduleSlot.id, id),
+        eq(scheduleSlot.userId, userId),
+        eq(scheduleSlot.subjectId, subjectId),
+      ),
+    )
+    .returning();
+  return deletedSlot;
 }
 
 export async function permanentlyDeleteSubject({
@@ -886,14 +1126,12 @@ export async function searchSimilarChunks(
   {
     embedding,
     limit = 20,
-    threshold = 0.3, // baisse temporaire
     userId,
     sourceName,
     subjectId,
   }: {
     embedding: number[];
     limit?: number;
-    threshold?: number;
     userId?: string;
     sourceName?: string;
     subjectId?: string;
@@ -909,6 +1147,7 @@ export async function searchSimilarChunks(
       .select({
         chunkId: resourceChunk.id,
         chunkContent: resourceChunk.content,
+        pageStart: resourceChunk.pageStart,
         resourceId: resource.id,
         resourceType: resource.sourceType,
         resourceUri: resource.sourceUri,
@@ -921,7 +1160,13 @@ export async function searchSimilarChunks(
       .where(
         and(
           userId
-            ? like(resource.sourceUri, `%/uploads/${userId}/%`)
+            ? or(
+                eq(resource.userId, userId),
+                and(
+                  isNull(resource.userId),
+                  like(resource.sourceUri, `%/uploads/${userId}/%`),
+                ),
+              )
             : undefined,
           sourceName ? like(resource.sourceUri, `%${sourceName}%`) : undefined,
           subjectId ? eq(resource.subjectId, subjectId) : undefined,
@@ -933,7 +1178,6 @@ export async function searchSimilarChunks(
     const chunksPerSource = new Map<string, number>();
 
     return results
-      .filter((result) => result.similarity > threshold)
       .filter((result) => {
         const count = chunksPerSource.get(result.resourceUri) ?? 0;
         if (count >= 3) return false;
@@ -951,6 +1195,71 @@ export async function searchSimilarChunks(
   }
 }
 
+/**
+ * Textual candidates complement vector search. The `search_vector` generated
+ * column is created by migration 0018. If an older database does not have it
+ * yet, this safely returns no text candidates and vector search still works.
+ */
+export async function searchTextChunks(
+  {
+    query,
+    limit = 30,
+    userId,
+    subjectId,
+    sourceName,
+  }: {
+    query: string;
+    limit?: number;
+    userId: string;
+    subjectId: string;
+    sourceName?: string;
+  },
+  txn?: DatabaseConnection,
+) {
+  const db = txn || dbClient;
+  const textQuery = query.trim();
+
+  if (!textQuery) return [];
+
+  try {
+    const rank = sql<number>`ts_rank_cd("ResourceChunk"."search_vector", websearch_to_tsquery('simple', ${textQuery}))`;
+
+    return await db
+      .select({
+        chunkId: resourceChunk.id,
+        chunkContent: resourceChunk.content,
+        pageStart: resourceChunk.pageStart,
+        resourceId: resource.id,
+        resourceUri: resource.sourceUri,
+        rank,
+      })
+      .from(resourceChunk)
+      .innerJoin(resource, eq(resourceChunk.resourceId, resource.id))
+      .where(
+        and(
+          or(
+            eq(resource.userId, userId),
+            and(
+              isNull(resource.userId),
+              like(resource.sourceUri, `%/uploads/${userId}/%`),
+            ),
+          ),
+          eq(resource.subjectId, subjectId),
+          sourceName ? like(resource.sourceUri, `%${sourceName}%`) : undefined,
+          sql`"ResourceChunk"."search_vector" @@ websearch_to_tsquery('simple', ${textQuery})`,
+        ),
+      )
+      .orderBy((fields) => desc(fields.rank))
+      .limit(limit);
+  } catch (error) {
+    console.warn(
+      'Full-text search unavailable; using vector results only:',
+      error,
+    );
+    return [];
+  }
+}
+
 export async function getCourseChunks({
   userId,
   subjectId,
@@ -963,7 +1272,10 @@ export async function getCourseChunks({
   try {
     const candidates = await dbClient
       .select({
+        chunkId: resourceChunk.id,
         chunkContent: resourceChunk.content,
+        pageStart: resourceChunk.pageStart,
+        resourceId: resource.id,
         resourceType: resource.sourceType,
         resourceUri: resource.sourceUri,
       })
@@ -971,7 +1283,13 @@ export async function getCourseChunks({
       .innerJoin(resource, eq(resourceChunk.resourceId, resource.id))
       .where(
         and(
-          like(resource.sourceUri, `%/uploads/${userId}/%`),
+          or(
+            eq(resource.userId, userId),
+            and(
+              isNull(resource.userId),
+              like(resource.sourceUri, `%/uploads/${userId}/%`),
+            ),
+          ),
           eq(resource.subjectId, subjectId),
         ),
       )
@@ -998,6 +1316,63 @@ export async function getCourseChunks({
   }
 }
 
+export async function getResourceForUser({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}) {
+  const [selectedResource] = await dbClient
+    .select()
+    .from(resource)
+    .where(
+      and(
+        eq(resource.id, id),
+        or(
+          eq(resource.userId, userId),
+          and(
+            isNull(resource.userId),
+            like(resource.sourceUri, `%/uploads/${userId}/%`),
+          ),
+        ),
+      ),
+    );
+
+  return selectedResource;
+}
+
+export async function updateResourceIndexStatus({
+  id,
+  userId,
+  status,
+  errorMessage,
+}: {
+  id: string;
+  userId: string;
+  status: 'pending' | 'processing' | 'ready' | 'failed';
+  errorMessage?: string | null;
+}) {
+  const [updatedResource] = await dbClient
+    .update(resource)
+    .set({ status, errorMessage: errorMessage ?? null, updatedAt: new Date() })
+    .where(
+      and(
+        eq(resource.id, id),
+        or(
+          eq(resource.userId, userId),
+          and(
+            isNull(resource.userId),
+            like(resource.sourceUri, `%/uploads/${userId}/%`),
+          ),
+        ),
+      ),
+    )
+    .returning();
+
+  return updatedResource;
+}
+
 export async function getUploadedResourcesByUserId({
   userId,
   limit = 500,
@@ -1013,11 +1388,23 @@ export async function getUploadedResourcesByUserId({
         id: resource.id,
         sourceUri: resource.sourceUri,
         createdAt: resource.createdAt,
+        originalName: resource.originalName,
+        contentType: resource.contentType,
+        sizeBytes: resource.sizeBytes,
+        pageCount: resource.pageCount,
+        status: resource.status,
+        errorMessage: resource.errorMessage,
       })
       .from(resource)
       .where(
         and(
-          like(resource.sourceUri, `%/uploads/${userId}/%`),
+          or(
+            eq(resource.userId, userId),
+            and(
+              isNull(resource.userId),
+              like(resource.sourceUri, `%/uploads/${userId}/%`),
+            ),
+          ),
           subjectId ? eq(resource.subjectId, subjectId) : undefined,
         ),
       )
@@ -1049,7 +1436,13 @@ export async function removeResourceFromSubject({
         and(
           eq(resource.id, resourceId),
           eq(resource.subjectId, subjectId),
-          like(resource.sourceUri, `%/uploads/${userId}/%`),
+          or(
+            eq(resource.userId, userId),
+            and(
+              isNull(resource.userId),
+              like(resource.sourceUri, `%/uploads/${userId}/%`),
+            ),
+          ),
         ),
       )
       .returning({ id: resource.id });
@@ -1069,11 +1462,26 @@ export async function upsertResourceWithChunks({
   contentHash,
   chunksWithEmbeddings,
   subjectId,
+  userId,
+  originalName,
+  contentType,
+  sizeBytes,
+  pageCount,
 }: {
   sourceUri: string;
   contentHash: string;
-  chunksWithEmbeddings: Array<{ content: string; embedding: number[] }>;
+  chunksWithEmbeddings: Array<{
+    content: string;
+    embedding: number[];
+    pageStart: number | null;
+    pageEnd: number | null;
+  }>;
   subjectId?: string;
+  userId: string;
+  originalName: string;
+  contentType: string;
+  sizeBytes: number;
+  pageCount: number | null;
 }) {
   try {
     await dbClient.transaction(async (tx) => {
@@ -1090,7 +1498,18 @@ export async function upsertResourceWithChunks({
           .where(eq(resourceChunk.resourceId, resourceId));
         await tx
           .update(resource)
-          .set({ contentHash, subjectId, updatedAt: new Date() })
+          .set({
+            contentHash,
+            subjectId,
+            userId,
+            originalName,
+            contentType,
+            sizeBytes,
+            pageCount,
+            status: 'ready',
+            errorMessage: null,
+            updatedAt: new Date(),
+          })
           .where(eq(resource.id, resourceId));
       } else {
         const [createdResource] = await tx
@@ -1099,7 +1518,13 @@ export async function upsertResourceWithChunks({
             sourceType: 'file',
             sourceUri,
             contentHash,
+            userId,
             subjectId,
+            originalName,
+            contentType,
+            sizeBytes,
+            pageCount,
+            status: 'ready',
             createdAt: new Date(),
             updatedAt: new Date(),
           })
@@ -1117,6 +1542,11 @@ export async function upsertResourceWithChunks({
           resourceId,
           content: chunk.content,
           embedding: chunk.embedding,
+          userId,
+          subjectId,
+          pageStart: chunk.pageStart,
+          pageEnd: chunk.pageEnd,
+          tokenCount: Math.ceil(chunk.content.length / 4),
         })),
       );
     });

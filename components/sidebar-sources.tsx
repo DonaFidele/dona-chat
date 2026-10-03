@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Trash2 } from 'lucide-react';
+import { LoaderCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -24,6 +24,11 @@ type Source = {
   position: number;
   name: string;
   uploadedAt: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+  pageCount: number | null;
+  status: 'pending' | 'processing' | 'ready' | 'failed';
+  errorMessage: string | null;
 };
 
 type SourcesResponse = { sources: Array<Source> };
@@ -34,7 +39,15 @@ export function SidebarSources() {
   const sourcesUrl = subjectId
     ? `/api/sources?subjectId=${encodeURIComponent(subjectId)}`
     : '/api/sources';
-  const { data, mutate } = useSWR<SourcesResponse>(sourcesUrl, fetcher);
+  const { data, mutate } = useSWR<SourcesResponse>(sourcesUrl, fetcher, {
+    refreshInterval: (current) =>
+      current?.sources.some(
+        (source) =>
+          source.status === 'pending' || source.status === 'processing',
+      )
+        ? 2000
+        : 0,
+  });
   const visibleSources = showAll ? data?.sources : data?.sources.slice(0, 3);
   const hiddenSourceCount = Math.max((data?.sources.length ?? 0) - 3, 0);
 
@@ -74,6 +87,20 @@ export function SidebarSources() {
     toast.success(`${source.name} a été retiré du cours`);
   };
 
+  const reindexSource = async (source: Source) => {
+    if (!subjectId) return;
+    const response = await fetch(`/api/sources/${source.id}/reindex`, {
+      method: 'POST',
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      toast.error(result?.error ?? 'La réindexation a échoué');
+      return;
+    }
+    await mutate();
+    toast.success(`${source.name} a été réindexé`);
+  };
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>
@@ -97,18 +124,41 @@ export function SidebarSources() {
                       locale: fr,
                     })}
                   </span>
+                  {source.status !== 'ready' && (
+                    <span className="text-xs text-amber-500">
+                      {source.status === 'failed'
+                        ? source.errorMessage || 'Indexation échouée'
+                        : 'Indexation en cours…'}
+                    </span>
+                  )}
                 </span>
               </SidebarMenuButton>
               {subjectId && (
-                <SidebarMenuAction
-                  type="button"
-                  showOnHover
-                  onClick={() => void removeSource(source)}
-                  aria-label={`Retirer ${source.name} du cours`}
-                  title="Retirer du cours"
-                >
-                  <Trash2 size={14} />
-                </SidebarMenuAction>
+                <>
+                  <SidebarMenuAction
+                    type="button"
+                    showOnHover
+                    className="right-7"
+                    onClick={() => void reindexSource(source)}
+                    aria-label={`Réindexer ${source.name}`}
+                    title="Réindexer"
+                  >
+                    {source.status === 'processing' ? (
+                      <LoaderCircle className="animate-spin" size={14} />
+                    ) : (
+                      <RefreshCw size={14} />
+                    )}
+                  </SidebarMenuAction>
+                  <SidebarMenuAction
+                    type="button"
+                    showOnHover
+                    onClick={() => void removeSource(source)}
+                    aria-label={`Retirer ${source.name} du cours`}
+                    title="Retirer du cours"
+                  >
+                    <Trash2 size={14} />
+                  </SidebarMenuAction>
+                </>
               )}
             </SidebarMenuItem>
           ))}

@@ -1,21 +1,69 @@
 'use client';
 
-import { useState } from 'react';
-import { BookMarked, FileText, ListChecks, Upload, X } from 'lucide-react';
-import { Button } from './ui/button';
-import { SidebarSources } from './sidebar-sources';
+import { useEffect, useState } from 'react';
+import {
+  BookMarked,
+  CalendarDays,
+  FileText,
+  Lightbulb,
+  ListChecks,
+  Upload,
+  X,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotesPanel } from './notes-panel';
+import { SchedulePanel } from './schedule-panel';
+import { SidebarSources } from './sidebar-sources';
+import { SourceViewerPanel } from './source-viewer-panel';
+import { Button } from './ui/button';
 
-type Tool = 'documents' | 'fiche' | 'quiz' | null;
+type Tool =
+  | 'documents'
+  | 'notes'
+  | 'schedule'
+  | 'source'
+  | 'fiche'
+  | 'quiz'
+  | null;
+
+type SelectedSource = {
+  documentId?: string;
+  name: string;
+  page?: number | null;
+  snippet?: string;
+};
 
 export function StudyToolRail({
   onGenerateStudySheet,
   onGenerateQuiz,
+  subjectId,
+  onAskSavedQuestion,
 }: {
   onGenerateStudySheet: () => void;
   onGenerateQuiz: () => void;
+  subjectId: string | null | undefined;
+  onAskSavedQuestion: (question: string) => void;
 }) {
   const [activeTool, setActiveTool] = useState<Tool>(null);
+  const [selectedSource, setSelectedSource] = useState<SelectedSource | null>(
+    null,
+  );
+  const panelOpen =
+    activeTool === 'documents' ||
+    activeTool === 'notes' ||
+    activeTool === 'schedule' ||
+    activeTool === 'source';
+
+  useEffect(() => {
+    const openSource = (event: Event) => {
+      const source = (event as CustomEvent<SelectedSource>).detail;
+      if (!source?.documentId) return;
+      setSelectedSource(source);
+      setActiveTool('source');
+    };
+    window.addEventListener('open-source-viewer', openSource);
+    return () => window.removeEventListener('open-source-viewer', openSource);
+  }, []);
 
   const toggle = (tool: Exclude<Tool, null>) => {
     if (tool === 'fiche') {
@@ -29,22 +77,32 @@ export function StudyToolRail({
     setActiveTool((current) => (current === tool ? null : tool));
   };
 
+  const panelTitle =
+    activeTool === 'documents'
+      ? 'Documents'
+      : activeTool === 'notes'
+        ? 'Notes'
+        : activeTool === 'schedule'
+          ? 'Planning'
+          : 'Source';
+
+  const panelContent =
+    activeTool === 'documents' ? (
+      <SidebarSources />
+    ) : activeTool === 'notes' ? (
+      <NotesPanel subjectId={subjectId} onAsk={onAskSavedQuestion} />
+    ) : activeTool === 'schedule' ? (
+      <SchedulePanel subjectId={subjectId} />
+    ) : (
+      <SourceViewerPanel source={selectedSource} />
+    );
+
   return (
     <>
-      {activeTool === 'documents' && (
+      {panelOpen && (
         <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border/70 bg-background/95 p-4 min-[821px]:block">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-serif text-lg">Documents</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setActiveTool(null)}
-              aria-label="Fermer le panneau"
-            >
-              <X />
-            </Button>
-          </div>
-          <SidebarSources />
+          <PanelHeader title={panelTitle} onClose={() => setActiveTool(null)} />
+          {panelContent}
         </aside>
       )}
 
@@ -64,28 +122,32 @@ export function StudyToolRail({
         >
           <FileText />
         </RailButton>
-        <RailButton label="Fiche de révision" onClick={() => toggle('fiche')}>
-          <BookMarked />
+        <RailButton
+          active={activeTool === 'notes'}
+          label="Notes et questions à revoir"
+          onClick={() => toggle('notes')}
+        >
+          <Lightbulb />
+        </RailButton>
+        <RailButton
+          active={activeTool === 'schedule'}
+          label="Planning"
+          onClick={() => toggle('schedule')}
+        >
+          <CalendarDays />
         </RailButton>
         <RailButton label="Quiz" onClick={() => toggle('quiz')}>
           <ListChecks />
         </RailButton>
+        <RailButton label="Fiche de révision" onClick={() => toggle('fiche')}>
+          <BookMarked />
+        </RailButton>
       </aside>
 
-      {activeTool === 'documents' && (
+      {panelOpen && (
         <section className="max-h-[35dvh] overflow-y-auto border-t border-border/80 bg-background px-4 py-3 min-[821px]:hidden">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-serif text-base">Documents</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setActiveTool(null)}
-              aria-label="Fermer les documents"
-            >
-              <X />
-            </Button>
-          </div>
-          <SidebarSources />
+          <PanelHeader title={panelTitle} onClose={() => setActiveTool(null)} />
+          {panelContent}
         </section>
       )}
 
@@ -98,17 +160,54 @@ export function StudyToolRail({
         >
           <Upload />
         </RailButton>
-        <RailButton label="Documents" onClick={() => toggle('documents')}>
+        <RailButton
+          active={activeTool === 'documents'}
+          label="Documents"
+          onClick={() => toggle('documents')}
+        >
           <FileText />
+        </RailButton>
+        <RailButton
+          active={activeTool === 'notes'}
+          label="Notes"
+          onClick={() => toggle('notes')}
+        >
+          <Lightbulb />
+        </RailButton>
+        <RailButton
+          active={activeTool === 'schedule'}
+          label="Planning"
+          onClick={() => toggle('schedule')}
+        >
+          <CalendarDays />
+        </RailButton>
+        <RailButton label="Quiz" onClick={() => toggle('quiz')}>
+          <ListChecks />
         </RailButton>
         <RailButton label="Générer une fiche" onClick={() => toggle('fiche')}>
           <BookMarked />
         </RailButton>
-        <RailButton label="Générer un quiz" onClick={() => toggle('quiz')}>
-          <ListChecks />
-        </RailButton>
       </div>
     </>
+  );
+}
+
+function PanelHeader({
+  title,
+  onClose,
+}: { title: string; onClose: () => void }) {
+  return (
+    <div className="mb-4 flex items-center justify-between">
+      <h2 className="font-serif text-lg">{title}</h2>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onClose}
+        aria-label={`Fermer ${title}`}
+      >
+        <X />
+      </Button>
+    </div>
   );
 }
 

@@ -41,8 +41,13 @@ export async function GET(request: NextRequest) {
     sources: resources.map((resource, index) => ({
       id: resource.id,
       position: index + 1,
-      name: getFileName(resource.sourceUri),
+      name: resource.originalName ?? getFileName(resource.sourceUri),
       uploadedAt: resource.createdAt,
+      contentType: resource.contentType,
+      sizeBytes: resource.sizeBytes,
+      pageCount: resource.pageCount,
+      status: resource.status,
+      errorMessage: resource.errorMessage,
     })),
   });
 }

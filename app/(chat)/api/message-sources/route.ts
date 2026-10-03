@@ -25,5 +25,9 @@ export async function GET(request: NextRequest) {
     return new ChatSDKError('forbidden:chat').toResponse();
   }
 
-  return Response.json({ sources: message.sources ?? [] });
+  // Storage URLs are intentionally never sent to the browser. A source is
+  // opened through the authenticated /api/sources/:id/content proxy instead.
+  return Response.json({
+    sources: (message.sources ?? []).map(({ uri: _, ...source }) => source),
+  });
 }

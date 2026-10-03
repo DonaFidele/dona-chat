@@ -24,7 +24,7 @@ import { SuggestedActions } from './suggested-actions';
 import equal from 'fast-deep-equal';
 import type { UseChatHelpers } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, Bookmark } from 'lucide-react';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
 import { getActiveSubjectId } from '@/lib/study-subject';
@@ -230,6 +230,33 @@ function PureMultimodalInput({
 
   const { isAtBottom, scrollToBottom } = useScrollToBottom();
 
+  const saveForLater = useCallback(async () => {
+    const question = input.trim();
+    const subjectId = getActiveSubjectId();
+    if (!question) {
+      toast.error('Écrivez une question avant de la garder pour plus tard.');
+      return;
+    }
+    if (!subjectId) {
+      toast.error('Choisissez une matière avant d’enregistrer cette question.');
+      return;
+    }
+
+    const response = await fetch(
+      `/api/subjects/${encodeURIComponent(subjectId)}/saved-questions`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      },
+    );
+    if (!response.ok) {
+      toast.error('La question n’a pas pu être enregistrée.');
+      return;
+    }
+    toast.success('Question enregistrée dans « À revoir plus tard ».');
+  }, [input]);
+
   useEffect(() => {
     if (status === 'submitted') {
       scrollToBottom();
@@ -376,11 +403,25 @@ function PureMultimodalInput({
         {status === 'submitted' ? (
           <StopButton stop={stop} setMessages={setMessages} />
         ) : (
-          <SendButton
-            input={input}
-            submitForm={submitForm}
-            uploadQueue={uploadQueue}
-          />
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="mr-1 size-8 rounded-md"
+              onClick={() => void saveForLater()}
+              disabled={input.trim().length === 0 || uploadQueue.length > 0}
+              aria-label="Garder cette question pour plus tard"
+              title="Garder pour plus tard"
+            >
+              <Bookmark size={15} />
+            </Button>
+            <SendButton
+              input={input}
+              submitForm={submitForm}
+              uploadQueue={uploadQueue}
+            />
+          </>
         )}
       </div>
     </div>

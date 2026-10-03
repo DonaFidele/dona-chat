@@ -17,7 +17,7 @@ const FileSchema = z.object({
   file: z
     .instanceof(Blob)
     .refine((file) => file.size <= MAX_UPLOAD_SIZE, {
-      message: 'File size should be less than 5MB',
+      message: `Le fichier doit faire moins de ${Math.floor(MAX_UPLOAD_SIZE / 1024 / 1024)} Mo`,
     })
     .refine(
       (file) =>
@@ -97,6 +97,7 @@ export async function POST(request: Request) {
           file,
           sourceUri: data.url,
           subjectId: subjectId || undefined,
+          userId: session.user.id,
         });
 
         return NextResponse.json({ ...data, indexed, chunks: result.chunks });

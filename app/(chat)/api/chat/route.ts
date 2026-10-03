@@ -27,6 +27,7 @@ import { getWeather } from '@/lib/ai/tools/get-weather';
 import {
   retrieveStudyContext,
   searchKnowledge,
+  type StudyRetrieval,
 } from '@/lib/ai/tools/search-knowledge';
 import { listKnowledgeFiles } from '@/lib/ai/tools/list-knowledge-files';
 import { createStudySheet } from '@/lib/ai/tools/create-study-sheet';
@@ -45,6 +46,45 @@ import { differenceInSeconds } from 'date-fns';
 import { ChatSDKError } from '@/lib/errors';
 
 export const maxDuration = 60;
+
+function getVerifiedResponseSources({
+  responseText,
+  retrieval,
+}: {
+  responseText: string;
+  retrieval: StudyRetrieval;
+}) {
+  const citedChunkIds = new Set(
+    [...responseText.matchAll(/\[\[c:([0-9a-f-]{36})\]\]/gi)].map((match) =>
+      match[1].toLowerCase(),
+    ),
+  );
+
+  return retrieval.results
+    .filter((result) => citedChunkIds.has(result.id.toLowerCase()))
+    .map((result) => ({
+      name: result.documentName,
+      uri: result.source,
+      similarity: result.similarity,
+      chunkId: result.id,
+      documentId: result.documentId,
+      page: result.page,
+      snippet: result.content.replace(/\s+/g, ' ').slice(0, 200),
+    }));
+}
+
+function isTextMessagePart(
+  value: unknown,
+): value is { type: 'text'; text: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    value.type === 'text' &&
+    'text' in value &&
+    typeof value.text === 'string'
+  );
+}
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -162,11 +202,41 @@ export async function POST(request: Request) {
         .filter((part) => part.type === 'text')
         .map((part) => part.text)
         .join('\n') || message.content;
-    const retrieval = await retrieveStudyContext({
-      query: question,
-      userId: session.user.id,
-      subjectId,
-    });
+    const retrievalHistory = previousMessages
+      .filter((previousMessage) => previousMessage.role === 'user')
+      .slice(-3)
+      .map((previousMessage) => {
+        const parts = Array.isArray(previousMessage.parts)
+          ? previousMessage.parts
+          : [];
+        return parts
+          .filter(isTextMessagePart)
+          .map((part) => part.text)
+          .join('\n');
+      })
+      .filter(Boolean);
+    let retrieval: StudyRetrieval;
+    try {
+      retrieval = await retrieveStudyContext({
+        query: question,
+        userId: session.user.id,
+        subjectId,
+        history: retrievalHistory,
+      });
+    } catch (error) {
+      // Retrieval must never make a chat unusable. The prompt receives an
+      // empty documentary context and tells the tutor to disclose that the
+      // explanation is based on general knowledge instead.
+      console.error(
+        'RAG retrieval failed; continuing without excerpts:',
+        error,
+      );
+      retrieval = {
+        hasDocuments: false,
+        documentNames: [],
+        results: [],
+      };
+    }
     const documentList = retrieval.documentNames.length
       ? retrieval.documentNames.map((name) => `- ${name}`).join('\n')
       : '- Aucun document';
@@ -179,7 +249,7 @@ export async function POST(request: Request) {
                 '',
               ),
             );
-            return `--- DÉBUT DU DOCUMENT : ${sourceName} ---\n${result.content.slice(0, 1200)}\n--- FIN DU DOCUMENT : ${sourceName} ---`;
+            return `[c:${result.id}] ${sourceName}\n--- DÉBUT DE L’EXTRAIT ---\n${result.content.slice(0, 1200)}\n--- FIN DE L’EXTRAIT ---`;
           })
           .join('\n\n')
       : '';
@@ -191,22 +261,7 @@ ${documentList}
 CONTEXTE :
 ${excerpts}
 
-STATUT : ${retrieval.hasDocuments ? (retrieval.results.length ? 'CONTEXTE PERTINENT DISPONIBLE' : 'CONTEXTE VIDE : aucun extrait ne dépasse le seuil de pertinence') : 'CONTEXTE VIDE : aucun document associé à cette conversation'}`;
-    const responseSources = Array.from(
-      new Map(
-        retrieval.results.map((result) => [result.source, result]),
-      ).values(),
-    ).map((result) => ({
-      name: decodeURIComponent(
-        (result.source.split('/').at(-1) ?? result.source).replace(
-          /^[0-9a-f-]{36}-/,
-          '',
-        ),
-      ),
-      uri: result.source,
-      similarity: result.similarity,
-    }));
-
+STATUT : ${retrieval.hasDocuments ? (retrieval.results.length ? 'EXTRAITS DISPONIBLES : leur score peut être faible, vérifie leur pertinence avant de les attribuer aux documents.' : 'AUCUN EXTRAIT RETOURNÉ : réponds avec des connaissances générales et la phrase de transparence prévue.') : 'AUCUN DOCUMENT ASSOCIÉ À CETTE CONVERSATION : réponds avec des connaissances générales et invite à ajouter le document concerné.'}`;
     const { longitude, latitude, city, country } = geolocation(request);
 
     const requestHints: RequestHints = {
@@ -295,6 +350,10 @@ STATUT : ${retrieval.hasDocuments ? (retrieval.results.length ? 'CONTEXTE PERTIN
                 const [, assistantMessage] = appendResponseMessages({
                   messages: [message],
                   responseMessages: response.messages,
+                });
+                const responseSources = getVerifiedResponseSources({
+                  responseText: JSON.stringify(assistantMessage.parts),
+                  retrieval,
                 });
 
                 await saveMessages({

@@ -167,6 +167,10 @@ export function SubjectsPage() {
                 name: editingSubject.name,
                 description: editingSubject.description ?? '',
                 color: editingSubject.color ?? '',
+                teacher: editingSubject.teacher ?? '',
+                examDate: editingSubject.examDate ?? '',
+                explanationLevel: editingSubject.explanationLevel,
+                language: editingSubject.language,
               }
             : null
         }

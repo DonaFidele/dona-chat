@@ -48,7 +48,6 @@ export function createStudySheet({
       const excerpts = await searchSimilarChunks({
         embedding,
         limit: 24,
-        threshold: 0,
         userId: session.user.id,
         subjectId,
       });

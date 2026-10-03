@@ -4,9 +4,16 @@ import { ChatSDKError } from '@/lib/errors';
 import { z } from 'zod';
 
 const createSubjectSchema = z.object({
-  name: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(3).max(60),
   description: z.string().trim().max(180).optional(),
-  color: z.string().trim().max(32).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
+  teacher: z.string().trim().max(120).optional(),
+  examDate: z.string().date().optional(),
+  explanationLevel: z.enum(['normal', 'simple', 'eli12']).optional(),
+  language: z.enum(['fr', 'en']).optional(),
 });
 
 export async function GET() {
@@ -40,6 +47,10 @@ export async function POST(request: Request) {
     name: payload.data.name,
     description: payload.data.description || null,
     color: payload.data.color || null,
+    teacher: payload.data.teacher || null,
+    examDate: payload.data.examDate || null,
+    explanationLevel: payload.data.explanationLevel,
+    language: payload.data.language,
     userId: session.user.id,
   });
 
