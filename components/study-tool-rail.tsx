@@ -31,7 +31,24 @@ export function StudyToolRail({
 
   return (
     <>
-      <aside className="hidden w-[52px] shrink-0 flex-col items-center gap-2 border-l border-border/80 bg-card py-3 lg:flex">
+      {activeTool === 'documents' && (
+        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border/70 bg-background/95 p-4 min-[821px]:block">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-serif text-lg">Documents</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setActiveTool(null)}
+              aria-label="Fermer le panneau"
+            >
+              <X />
+            </Button>
+          </div>
+          <SidebarSources />
+        </aside>
+      )}
+
+      <aside className="hidden w-[52px] shrink-0 flex-col items-center gap-2 border-l border-border/80 bg-card py-3 min-[821px]:flex">
         <RailButton
           label="Ajouter un document"
           onClick={() =>
@@ -55,7 +72,24 @@ export function StudyToolRail({
         </RailButton>
       </aside>
 
-      <div className="flex items-center gap-1 border-t border-border/80 bg-card px-3 py-2 lg:hidden">
+      {activeTool === 'documents' && (
+        <section className="max-h-[35dvh] overflow-y-auto border-t border-border/80 bg-background px-4 py-3 min-[821px]:hidden">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-serif text-base">Documents</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setActiveTool(null)}
+              aria-label="Fermer les documents"
+            >
+              <X />
+            </Button>
+          </div>
+          <SidebarSources />
+        </section>
+      )}
+
+      <div className="flex shrink-0 items-center justify-center gap-1 border-t border-border/80 bg-card px-3 py-2 min-[821px]:hidden">
         <RailButton
           label="Ajouter un document"
           onClick={() =>
@@ -74,25 +108,6 @@ export function StudyToolRail({
           <ListChecks />
         </RailButton>
       </div>
-
-      {activeTool && (
-        <aside className="hidden w-80 shrink-0 border-l border-border/70 bg-background/95 p-4 lg:block">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-serif text-lg">
-              {activeTool === 'documents' && 'Documents'}
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setActiveTool(null)}
-              aria-label="Fermer le panneau"
-            >
-              <X />
-            </Button>
-          </div>
-          {activeTool === 'documents' && <SidebarSources />}
-        </aside>
-      )}
     </>
   );
 }

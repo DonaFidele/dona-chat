@@ -23,10 +23,10 @@ export default async function Layout({
       />
       <SidebarProvider
         defaultOpen={!isCollapsed}
-        className="min-h-dvh bg-[#102827] p-3 lg:p-[14px]"
+        className="min-h-dvh flex-col bg-[#102827] min-[821px]:flex-row min-[821px]:p-[14px]"
       >
         <AppSidebar user={session?.user} />
-        <SidebarInset className="min-h-0 overflow-hidden rounded-r-xl border-y border-r border-[#35504d] bg-background lg:rounded-xl">
+        <SidebarInset className="min-h-0 flex-1 overflow-hidden bg-background min-[821px]:rounded-xl min-[821px]:border min-[821px]:border-[#35504d]">
           {children}
         </SidebarInset>
       </SidebarProvider>

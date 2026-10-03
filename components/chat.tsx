@@ -173,7 +173,7 @@ export function Chat({
 
   return (
     <>
-      <div className="flex h-full min-h-0 min-w-0 bg-background">
+      <div className="flex h-full min-h-0 min-w-0 flex-col bg-background min-[821px]:flex-row">
         <div className="flex min-w-0 flex-1 flex-col">
           <ChatHeader subjectName={subjectName} />
 

@@ -31,7 +31,11 @@ type Subject = {
 
 type SubjectsResponse = { subjects: Array<Subject> };
 
-export function SidebarSubjects() {
+export function SidebarSubjects({
+  variant = 'sidebar',
+}: {
+  variant?: 'sidebar' | 'mobile';
+}) {
   const router = useRouter();
   const { data, mutate } = useSWR<SubjectsResponse>('/api/subjects', fetcher);
   const [activeSubjectId, setActiveSubject] = useState<string | null>(null);
@@ -79,6 +83,63 @@ export function SidebarSubjects() {
   const createSubject = () => {
     router.push('/?create=1');
   };
+
+  if (variant === 'mobile') {
+    return (
+      <nav
+        aria-label="Matières"
+        className="flex min-w-0 items-center gap-2 overflow-hidden px-3 py-2"
+      >
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-9 shrink-0 border-sidebar-border bg-transparent"
+          onClick={createSubject}
+          aria-label="Créer une matière"
+          title="Créer une matière"
+        >
+          <Plus />
+        </Button>
+        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {data?.subjects.map((subject) => (
+            <Button
+              key={subject.id}
+              type="button"
+              variant="ghost"
+              className="h-auto min-h-12 min-w-36 shrink-0 items-start rounded-md border border-transparent px-3 py-2 text-left hover:bg-sidebar-accent"
+              data-active={activeSubjectId === subject.id}
+              onClick={() => openSubjectChat(subject)}
+            >
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="flex items-center gap-2">
+                  <span
+                    className="size-2.5 shrink-0 rounded-sm"
+                    style={{
+                      backgroundColor:
+                        subject.color ?? 'hsl(var(--sidebar-primary))',
+                    }}
+                    aria-hidden="true"
+                  />
+                  <span className="max-w-28 truncate text-sm font-medium">
+                    {subject.name}
+                  </span>
+                </span>
+                <span className="pl-[18px] text-[10px] text-sidebar-foreground/55">
+                  {subject.documentCount} document
+                  {subject.documentCount === 1 ? '' : 's'}
+                </span>
+              </span>
+            </Button>
+          ))}
+          {data?.subjects.length === 0 && (
+            <p className="flex items-center px-2 text-xs text-sidebar-foreground/55">
+              Créez votre première matière.
+            </p>
+          )}
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <SidebarGroup className="p-3">
