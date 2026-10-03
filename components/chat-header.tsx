@@ -1,42 +1,20 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWindowSize } from 'usehooks-ts';
 
 import { SidebarToggle } from '@/components/sidebar-toggle';
-import type { VisibilityType } from './visibility-selector';
 import { Button } from '@/components/ui/button';
-import { PlusIcon, VercelIcon } from './icons';
-import { BookOpen, FileText, CircleHelp } from 'lucide-react';
-import { SidebarSources } from './sidebar-sources';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
+import { PlusIcon } from './icons';
+import { BookOpen } from 'lucide-react';
 import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import type { Session } from 'next-auth';
 
 function PureChatHeader({
-  chatId,
-  selectedModelId,
-  isReadonly,
-  session,
   subjectName,
-  onGenerateStudySheet,
-  onGenerateQuiz,
 }: {
-  chatId: string;
-  selectedModelId: string;
-  selectedVisibilityType: VisibilityType;
-  isReadonly: boolean;
-  session: Session;
   subjectName?: string | null;
-  onGenerateStudySheet: () => void;
-  onGenerateQuiz: () => void;
 }) {
   const router = useRouter();
   const { open } = useSidebar();
@@ -44,56 +22,22 @@ function PureChatHeader({
   const { width: windowWidth } = useWindowSize();
 
   return (
-    <header className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur md:px-6">
-      <SidebarToggle />
+    <header className="flex min-h-[74px] items-center gap-3 border-b border-border/80 px-5 py-3 md:px-6">
+      <div className="lg:hidden">
+        <SidebarToggle />
+      </div>
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-          <BookOpen />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
+          <BookOpen size={16} />
         </div>
         <div className="min-w-0">
-          <p className="truncate font-semibold tracking-tight">
+          <p className="truncate text-base font-medium tracking-tight">
             {subjectName ?? 'Dona-Chat'}
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Espace d&apos;étude
+          <p className="truncate text-xs text-muted-foreground">
+            Posez une question sur les documents de cette matière.
           </p>
         </div>
-      </div>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="order-2 ml-auto text-muted-foreground"
-            aria-label="Afficher les fichiers uploadés"
-            title="Fichiers uploadés"
-          >
-            <FileText />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-80 p-2">
-          <SidebarSources />
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="order-3 flex w-full items-center gap-2 md:order-2 md:w-auto">
-        <Button
-          variant="outline"
-          className="h-9 rounded-full border-accent px-3 text-sm"
-          onClick={onGenerateStudySheet}
-        >
-          <FileText data-icon="inline-start" />
-          Générer une fiche de révision
-        </Button>
-        <Button
-          variant="outline"
-          className="h-9 rounded-full border-primary px-3 text-sm hover:bg-primary hover:text-primary-foreground"
-          onClick={onGenerateQuiz}
-        >
-          <CircleHelp data-icon="inline-start" />
-          Faire un quiz
-        </Button>
       </div>
 
       {(!open || windowWidth < 768) && (
@@ -108,36 +52,16 @@ function PureChatHeader({
               }}
             >
               <PlusIcon />
-              <span className="md:sr-only">New Chat</span>
+              <span className="md:sr-only">Retour aux matières</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>New Chat</TooltipContent>
+          <TooltipContent>Retour aux matières</TooltipContent>
         </Tooltip>
       )}
-
-      <Button
-        className="bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-900 hidden md:flex py-1.5 px-2 h-fit md:h-[34px] order-4 md:ml-auto"
-        asChild
-      >
-        <Link
-          href={`https://vercel.com/new/clone?repository-url=https://github.com/vercel/ai-chatbot&env=AUTH_SECRET&envDescription=Learn more about how to get the API Keys for the application&envLink=https://github.com/vercel/ai-chatbot/blob/main/.env.example&demo-title=AI Chatbot&demo-description=An Open-Source AI Chatbot Template Built With Next.js and the AI SDK by Vercel.&demo-url=https://chat.vercel.ai&products=[{"type":"integration","protocol":"ai","productSlug":"grok","integrationSlug":"xai"},{"type":"integration","protocol":"storage","productSlug":"neon","integrationSlug":"neon"},{"type":"integration","protocol":"storage","productSlug":"upstash-kv","integrationSlug":"upstash"},{"type":"blob"}]`}
-          target="_noblank"
-        >
-          <VercelIcon size={16} />
-          Deploy with Vercel
-        </Link>
-      </Button>
     </header>
   );
 }
 
 export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return (
-    prevProps.selectedModelId === nextProps.selectedModelId &&
-    prevProps.subjectName === nextProps.subjectName &&
-    prevProps.chatId === nextProps.chatId &&
-    prevProps.isReadonly === nextProps.isReadonly &&
-    prevProps.onGenerateStudySheet === nextProps.onGenerateStudySheet &&
-    prevProps.onGenerateQuiz === nextProps.onGenerateQuiz
-  );
+  return prevProps.subjectName === nextProps.subjectName;
 });

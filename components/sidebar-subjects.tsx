@@ -1,10 +1,9 @@
 'use client';
 
-import { BookOpen, CalendarDays, FileText } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { BookOpen, FileText, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { toast } from 'sonner';
 import {
   getActiveSubjectId,
   setActiveSubjectId,
@@ -34,11 +33,8 @@ type SubjectsResponse = { subjects: Array<Subject> };
 
 export function SidebarSubjects() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data, mutate } = useSWR<SubjectsResponse>('/api/subjects', fetcher);
   const [activeSubjectId, setActiveSubject] = useState<string | null>(null);
-  const [uploadSubject, setUploadSubject] = useState<Subject | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const refreshActiveSubject = () => setActiveSubject(getActiveSubjectId());
@@ -80,65 +76,23 @@ export function SidebarSubjects() {
       });
   };
 
-  const uploadDocuments = async (files: Array<File>) => {
-    if (!uploadSubject || files.length === 0) return;
-
-    setIsUploading(true);
-    try {
-      const results = await Promise.all(
-        files.map(async (file) => {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('subjectId', uploadSubject.id);
-          const response = await fetch('/api/files/upload', {
-            method: 'POST',
-            body: formData,
-          });
-          const result = await response.json().catch(() => null);
-          if (!response.ok) {
-            throw new Error(
-              result?.error ?? `Échec de l'ajout de ${file.name}`,
-            );
-          }
-          return file.name;
-        }),
-      );
-
-      await mutate();
-      window.dispatchEvent(new Event('sources-updated'));
-      toast.success(
-        `${results.length} document${results.length > 1 ? 's ont' : ' a'} été ajouté${results.length > 1 ? 's' : ''} à ${uploadSubject.name}`,
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "L'ajout des documents a échoué",
-      );
-    } finally {
-      setIsUploading(false);
-      setUploadSubject(null);
-    }
+  const createSubject = () => {
+    router.push('/?create=1');
   };
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="px-2 font-mono text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/50">
-        Mes matières
+    <SidebarGroup className="p-3">
+      <Button
+        variant="outline"
+        className="mb-3 h-9 w-full justify-center border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent"
+        onClick={createSubject}
+      >
+        <Plus /> Nouvelle matière
+      </Button>
+      <SidebarGroupLabel className="px-0 font-mono text-[10px] uppercase tracking-[0.2em] text-sidebar-foreground/50">
+        Matières
       </SidebarGroupLabel>
       <SidebarGroupContent>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json,text/markdown,.md,.mdx"
-          className="hidden"
-          multiple
-          onChange={(event) => {
-            const files = Array.from(event.target.files ?? []);
-            event.target.value = '';
-            void uploadDocuments(files);
-          }}
-        />
         <SidebarMenu>
           {data?.subjects.map((subject) => (
             <SidebarMenuItem key={subject.id}>
@@ -146,22 +100,26 @@ export function SidebarSubjects() {
                 isActive={activeSubjectId === subject.id}
                 onClick={() => openSubjectChat(subject)}
                 tooltip={subject.name}
-                className="group/subject h-10 rounded-lg px-2"
+                className="group/subject h-auto min-h-12 rounded-md px-2 py-2"
               >
                 <span
                   className="size-3.5 shrink-0 rounded-[3px] ring-1 ring-sidebar-foreground/20"
-                  style={{ backgroundColor: subject.color ?? 'hsl(var(--sidebar-primary))' }}
+                  style={{
+                    backgroundColor:
+                      subject.color ?? 'hsl(var(--sidebar-primary))',
+                  }}
                   aria-hidden="true"
                 />
                 <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
                   <span className="flex w-full items-center gap-2">
-                    <BookOpen className="shrink-0 text-sidebar-foreground/65 group-data-[active=true]/subject:text-sidebar-primary" />
-                    <span className="truncate font-medium">{subject.name}</span>
+                    <BookOpen className="size-3.5 shrink-0 text-sidebar-foreground/65 group-data-[active=true]/subject:text-sidebar-primary" />
+                    <span className="truncate text-sm font-medium">
+                      {subject.name}
+                    </span>
                   </span>
-                  <span className="flex items-center gap-1.5 pl-6 text-[11px] text-sidebar-foreground/50 group-data-[active=true]/subject:text-sidebar-primary/75">
-                    <FileText /> {subject.documentCount} document{subject.documentCount === 1 ? '' : 's'}
-                    <span aria-hidden="true">·</span>
-                    <CalendarDays /> à réviser
+                  <span className="flex items-center gap-1.5 pl-5 text-[10px] text-sidebar-foreground/50 group-data-[active=true]/subject:text-sidebar-primary/75">
+                    <FileText className="size-3" /> {subject.documentCount}{' '}
+                    document{subject.documentCount === 1 ? '' : 's'}
                   </span>
                 </span>
               </SidebarMenuButton>

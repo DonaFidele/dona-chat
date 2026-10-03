@@ -173,53 +173,39 @@ export function Chat({
 
   return (
     <>
-      <div className="flex min-w-0 h-dvh bg-background">
+      <div className="flex h-full min-h-0 min-w-0 bg-background">
         <div className="flex min-w-0 flex-1 flex-col">
-        <ChatHeader
-          chatId={id}
-          selectedModelId={initialChatModel}
-          selectedVisibilityType={initialVisibilityType}
-          isReadonly={isReadonly}
-          session={session}
-          subjectName={subjectName}
-          onGenerateStudySheet={() =>
-            append({
-              role: 'user',
-              content: 'Génère une fiche de révision complète pour ce cours.',
-            })
-          }
-          onGenerateQuiz={() => void generateQuiz()}
-        />
+          <ChatHeader subjectName={subjectName} />
 
-        <Messages
-          chatId={id}
-          status={status}
-          votes={votes}
-          messages={messages}
-          setMessages={setMessages}
-          reload={reload}
-          isReadonly={isReadonly}
-          isArtifactVisible={isArtifactVisible}
-        />
+          <Messages
+            chatId={id}
+            status={status}
+            votes={votes}
+            messages={messages}
+            setMessages={setMessages}
+            reload={reload}
+            isReadonly={isReadonly}
+            isArtifactVisible={isArtifactVisible}
+          />
 
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
-          {!isReadonly && (
-            <MultimodalInput
-              chatId={id}
-              input={input}
-              setInput={setInput}
-              handleSubmit={handleSubmit}
-              status={status}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              setMessages={setMessages}
-              append={append}
-              selectedVisibilityType={visibilityType}
-            />
-          )}
-        </form>
+          <form className="mx-auto flex w-full max-w-4xl gap-2 px-5 pb-4 pt-2 md:px-6 md:pb-5">
+            {!isReadonly && (
+              <MultimodalInput
+                chatId={id}
+                input={input}
+                setInput={setInput}
+                handleSubmit={handleSubmit}
+                status={status}
+                stop={stop}
+                attachments={attachments}
+                setAttachments={setAttachments}
+                messages={messages}
+                setMessages={setMessages}
+                append={append}
+                selectedVisibilityType={visibilityType}
+              />
+            )}
+          </form>
         </div>
         <StudyToolRail
           onGenerateStudySheet={() =>

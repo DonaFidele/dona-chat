@@ -1,7 +1,7 @@
 'use client';
 
 import { BookPlus, LoaderCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { setActiveSubjectId } from '@/lib/study-subject';
@@ -13,16 +13,9 @@ import { Button } from './ui/button';
 
 type SubjectsResponse = { subjects: Array<SubjectCardData> };
 
-const lawExample: SubjectCardData = {
-  name: 'Le droit',
-  description: 'Responsabilité civile, pénale et cas pratiques.',
-  color: '#1E3A8A',
-  documentCount: 0,
-  isExample: true,
-};
-
 export function SubjectsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   useEffect(() => {
     setActiveSubjectId(null);
   }, []);
@@ -32,34 +25,28 @@ export function SubjectsPage() {
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [openingSubjectId, setOpeningSubjectId] = useState<string | null>(null);
-  const [editingSubject, setEditingSubject] = useState<SubjectCardData | null>(null);
+  const [editingSubject, setEditingSubject] = useState<SubjectCardData | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1') return;
+
+    setIsCreateOpen(true);
+    router.replace('/');
+  }, [router, searchParams]);
 
   const openSubject = async (subject: SubjectCardData) => {
-    setOpeningSubjectId(subject.id ?? 'law-example');
+    if (!subject.id) return;
+
+    setOpeningSubjectId(subject.id);
 
     try {
-      let openedSubject = subject;
-      if (!subject.id) {
-        const response = await fetch('/api/subjects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: lawExample.name,
-            description: lawExample.description,
-            color: lawExample.color,
-          }),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error);
-        openedSubject = result.subject;
-        await mutate();
-      }
-
-      setActiveSubjectId(openedSubject.id ?? null);
+      setActiveSubjectId(subject.id);
       router.push(
-        openedSubject.latestChatId
-          ? `/chat/${openedSubject.latestChatId}`
-          : `/chat?subject=${openedSubject.id}`,
+        subject.latestChatId
+          ? `/chat/${subject.latestChatId}`
+          : `/chat?subject=${subject.id}`,
       );
     } finally {
       setOpeningSubjectId(null);
@@ -82,7 +69,6 @@ export function SubjectsPage() {
   };
 
   const subjects = data?.subjects ?? [];
-  const cards = subjects.length ? subjects : [lawExample];
 
   return (
     <main className="min-h-dvh bg-background px-5 py-8 md:px-10 md:py-12">
@@ -96,10 +82,14 @@ export function SubjectsPage() {
               Qu&apos;est-ce qu&apos;on étudie aujourd&apos;hui ?
             </h1>
             <p className="mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground md:text-lg">
-              Retrouvez vos matières et discutez avec les documents qui vous aident à progresser.
+              Retrouvez vos matières et discutez avec les documents qui vous
+              aident à progresser.
             </p>
           </div>
-          <Button className="w-fit gap-2 rounded-lg" onClick={() => setIsCreateOpen(true)}>
+          <Button
+            className="w-fit gap-2 rounded-lg"
+            onClick={() => setIsCreateOpen(true)}
+          >
             <BookPlus data-icon="inline-start" />
             Nouvelle matière
           </Button>
@@ -121,37 +111,73 @@ export function SubjectsPage() {
           {!isLoading && !error && (
             <>
               {subjects.length === 0 && (
-                <p className="mb-5 text-sm text-muted-foreground">
-                  Commencez avec l’exemple ci-dessous ou créez votre première
-                  matière.
-                </p>
+                <div className="rounded-xl border border-dashed border-border/90 bg-card/60 px-6 py-12 text-center">
+                  <p className="text-base font-medium">
+                    Aucune matière pour le moment
+                  </p>
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                    Créez une matière, puis ajoutez les documents de votre cours
+                    pour commencer à étudier avec Dona-Chat.
+                  </p>
+                  <Button
+                    className="mt-5 gap-2"
+                    onClick={() => setIsCreateOpen(true)}
+                  >
+                    <BookPlus data-icon="inline-start" />
+                    Créer une matière
+                  </Button>
+                </div>
               )}
-              <SubjectsGrid
-                subjects={cards}
-                openingSubjectId={openingSubjectId}
-                onOpen={(subject) => void openSubject(subject)}
-                onEdit={setEditingSubject}
-                onDelete={async (subject) => {
-                  if (!subject.id || !window.confirm(`Supprimer ${subject.name} ?`)) return;
-                  await fetch(`/api/subjects/${subject.id}`, { method: 'DELETE' });
-                  setActiveSubjectId(null);
-                  await mutate();
-                }}
-              />
+              {subjects.length > 0 && (
+                <SubjectsGrid
+                  subjects={subjects}
+                  openingSubjectId={openingSubjectId}
+                  onOpen={(subject) => void openSubject(subject)}
+                  onEdit={setEditingSubject}
+                  onDelete={async (subject) => {
+                    if (
+                      !subject.id ||
+                      !window.confirm(`Supprimer ${subject.name} ?`)
+                    )
+                      return;
+                    await fetch(`/api/subjects/${subject.id}`, {
+                      method: 'DELETE',
+                    });
+                    setActiveSubjectId(null);
+                    await mutate();
+                  }}
+                />
+              )}
             </>
           )}
         </section>
       </div>
 
-      <CreateSubjectModal open={isCreateOpen} onOpenChange={setIsCreateOpen} onCreate={createSubject} />
+      <CreateSubjectModal
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onCreate={createSubject}
+      />
       <CreateSubjectModal
         open={Boolean(editingSubject)}
         onOpenChange={(open) => !open && setEditingSubject(null)}
-        subject={editingSubject ? { name: editingSubject.name, description: editingSubject.description ?? '', color: editingSubject.color ?? '' } : null}
+        subject={
+          editingSubject
+            ? {
+                name: editingSubject.name,
+                description: editingSubject.description ?? '',
+                color: editingSubject.color ?? '',
+              }
+            : null
+        }
         title="Modifier la matière"
         onCreate={async (value) => {
           if (!editingSubject?.id) return;
-          const response = await fetch(`/api/subjects/${editingSubject.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
+          const response = await fetch(`/api/subjects/${editingSubject.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(value),
+          });
           if (!response.ok) throw new Error('Modification impossible');
           setEditingSubject(null);
           await mutate();

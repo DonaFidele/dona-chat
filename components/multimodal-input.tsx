@@ -87,6 +87,7 @@ function PureMultimodalInput({
     'input',
     '',
   );
+  const [studyMode, setStudyMode] = useState<'qa' | 'socratic'>('qa');
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -112,10 +113,26 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
+  useEffect(() => {
+    const openFilePicker = () => fileInputRef.current?.click();
+    window.addEventListener('open-document-upload', openFilePicker);
+    return () =>
+      window.removeEventListener('open-document-upload', openFilePicker);
+  }, []);
+
   const submitForm = useCallback(() => {
-    handleSubmit(undefined, {
-      experimental_attachments: attachments,
-    });
+    if (studyMode === 'socratic') {
+      void append({
+        role: 'user',
+        content: `${input}\n\nRéponds en mode socratique : guide-moi avec des questions courtes et progressives, en restant exclusivement fondé sur les documents du cours.`,
+        experimental_attachments: attachments,
+      });
+      setInput('');
+    } else {
+      handleSubmit(undefined, {
+        experimental_attachments: attachments,
+      });
+    }
 
     setAttachments([]);
     setLocalStorageInput('');
@@ -124,7 +141,17 @@ function PureMultimodalInput({
     if (width && width > 768) {
       textareaRef.current?.focus();
     }
-  }, [attachments, handleSubmit, setAttachments, setLocalStorageInput, width]);
+  }, [
+    append,
+    attachments,
+    handleSubmit,
+    input,
+    setAttachments,
+    setInput,
+    setLocalStorageInput,
+    studyMode,
+    width,
+  ]);
 
   const uploadFile = async (file: File): Promise<UploadedFile | undefined> => {
     const formData = new FormData();
@@ -210,7 +237,7 @@ function PureMultimodalInput({
   }, [status, scrollToBottom]);
 
   return (
-    <div className="relative w-full flex flex-col gap-4">
+    <div className="relative flex w-full flex-col gap-2">
       <AnimatePresence>
         {!isAtBottom && (
           <motion.div
@@ -245,6 +272,37 @@ function PureMultimodalInput({
             selectedVisibilityType={selectedVisibilityType}
           />
         )}
+
+      <div
+        className="flex w-fit overflow-hidden rounded-md border border-border/90 bg-card text-xs"
+        role="group"
+        aria-label="Mode d’étude"
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          className={cx(
+            'h-7 rounded-none px-3 text-xs',
+            studyMode === 'qa' &&
+              'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
+          )}
+          onClick={() => setStudyMode('qa')}
+        >
+          Questions-réponses
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className={cx(
+            'h-7 rounded-none px-3 text-xs',
+            studyMode === 'socratic' &&
+              'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
+          )}
+          onClick={() => setStudyMode('socratic')}
+        >
+          Socratique
+        </Button>
+      </div>
 
       <input
         type="file"
@@ -282,11 +340,11 @@ function PureMultimodalInput({
       <Textarea
         data-testid="multimodal-input"
         ref={textareaRef}
-        placeholder="Pose une question sur tes documents…"
+        placeholder="Pose une question sur les documents de cette matière…"
         value={input}
         onChange={handleInput}
         className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-xl !text-base bg-muted pb-10 dark:border-border',
+          'min-h-[24px] max-h-[calc(75dvh)] resize-none overflow-hidden rounded-md border-border bg-transparent pb-10 !text-base shadow-none focus-visible:ring-1',
           className,
         )}
         rows={2}
