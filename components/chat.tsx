@@ -22,6 +22,7 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import { getActiveSubjectId, setActiveSubjectId } from '@/lib/study-subject';
 import { QuizPanel, type QuizQuestion } from './quiz-panel';
+import { StudyToolRail } from './study-tool-rail';
 import { Button } from './ui/button';
 
 export function Chat({
@@ -172,7 +173,8 @@ export function Chat({
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-dvh bg-background">
+      <div className="flex min-w-0 h-dvh bg-background">
+        <div className="flex min-w-0 flex-1 flex-col">
         <ChatHeader
           chatId={id}
           selectedModelId={initialChatModel}
@@ -218,6 +220,16 @@ export function Chat({
             />
           )}
         </form>
+        </div>
+        <StudyToolRail
+          onGenerateStudySheet={() =>
+            append({
+              role: 'user',
+              content: 'Génère une fiche de révision complète pour ce cours.',
+            })
+          }
+          onGenerateQuiz={() => void generateQuiz()}
+        />
       </div>
 
       {isQuizOpen && (
