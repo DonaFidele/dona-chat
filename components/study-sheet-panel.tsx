@@ -277,83 +277,82 @@ export function StudySheetPanel({
               />
             )}
             <ul className="mt-2 space-y-2">
-              {section.items.map((item) => (
-                <li key={item.id} className="rounded-md border p-3 text-sm">
-                  {editingItem?.itemId === item.id ? (
-                    <ItemEditor
-                      item={editingItem}
-                      isSaving={isSaving}
-                      onCancel={() => setEditingItem(null)}
-                      onChange={setEditingItem}
-                      onSave={() => void saveItem()}
-                    />
-                  ) : (
-                    <>
-                      <p>{item.text}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1">
-                        {item.citation ? (
+              {section.items.map((item) => {
+                const citation = item.citation;
+                return (
+                  <li key={item.id} className="rounded-md border p-3 text-sm">
+                    {editingItem?.itemId === item.id ? (
+                      <ItemEditor
+                        item={editingItem}
+                        isSaving={isSaving}
+                        onCancel={() => setEditingItem(null)}
+                        onChange={setEditingItem}
+                        onSave={() => void saveItem()}
+                      />
+                    ) : (
+                      <>
+                        <p>{item.text}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          {citation ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-1.5 text-xs"
+                              onClick={() =>
+                                window.dispatchEvent(
+                                  new CustomEvent('open-source-viewer', {
+                                    detail: {
+                                      documentId: citation.documentId,
+                                      name: citation.documentName,
+                                      page: citation.page,
+                                    },
+                                  }),
+                                )
+                              }
+                            >
+                              <FileText size={12} /> [
+                              {sourceNumberByDocument.get(citation.documentId)}]{' '}
+                              {citation.documentName}
+                              {citation.page ? ` · p. ${citation.page}` : ''}
+                            </Button>
+                          ) : (
+                            <span className="px-1.5 text-xs text-muted-foreground">
+                              Note personnelle
+                            </span>
+                          )}
                           <Button
-                            size="sm"
+                            aria-label="Modifier cet élément"
+                            className="h-7 w-7 p-0"
+                            disabled={isSaving}
+                            size="icon"
                             variant="ghost"
-                            className="h-7 px-1.5 text-xs"
                             onClick={() =>
-                              window.dispatchEvent(
-                                new CustomEvent('open-source-viewer', {
-                                  detail: {
-                                    documentId: item.citation.documentId,
-                                    name: item.citation.documentName,
-                                    page: item.citation.page,
-                                  },
-                                }),
-                              )
+                              setEditingItem({
+                                sectionId: section.id,
+                                itemId: item.id,
+                                text: item.text,
+                                importance: item.importance,
+                              })
                             }
                           >
-                            <FileText size={12} /> [
-                            {sourceNumberByDocument.get(
-                              item.citation.documentId,
-                            )}
-                            ] {item.citation.documentName}
-                            {item.citation.page
-                              ? ` · p. ${item.citation.page}`
-                              : ''}
+                            <Pencil size={13} />
                           </Button>
-                        ) : (
-                          <span className="px-1.5 text-xs text-muted-foreground">
-                            Note personnelle
-                          </span>
-                        )}
-                        <Button
-                          aria-label="Modifier cet élément"
-                          className="h-7 w-7 p-0"
-                          disabled={isSaving}
-                          size="icon"
-                          variant="ghost"
-                          onClick={() =>
-                            setEditingItem({
-                              sectionId: section.id,
-                              itemId: item.id,
-                              text: item.text,
-                              importance: item.importance,
-                            })
-                          }
-                        >
-                          <Pencil size={13} />
-                        </Button>
-                        <Button
-                          aria-label="Supprimer cet élément"
-                          className="h-7 w-7 p-0 text-destructive"
-                          disabled={isSaving}
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => void deleteItem(section.id, item.id)}
-                        >
-                          <Trash2 size={13} />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </li>
-              ))}
+                          <Button
+                            aria-label="Supprimer cet élément"
+                            className="h-7 w-7 p-0 text-destructive"
+                            disabled={isSaving}
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => void deleteItem(section.id, item.id)}
+                          >
+                            <Trash2 size={13} />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ))}

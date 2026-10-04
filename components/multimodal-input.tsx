@@ -46,10 +46,10 @@ function PureMultimodalInput({
   className,
   selectedVisibilityType,
   subjectId,
-  studyMode,
-  answerLanguage,
-  onStudyModeChange,
-  onAnswerLanguageChange,
+  studyMode = 'qa',
+  answerLanguage = 'auto',
+  onStudyModeChange = () => {},
+  onAnswerLanguageChange = () => {},
 }: {
   chatId: string;
   input: UseChatHelpers['input'];
@@ -65,10 +65,10 @@ function PureMultimodalInput({
   className?: string;
   selectedVisibilityType: VisibilityType;
   subjectId?: string | null;
-  studyMode: 'qa' | 'socratic';
-  answerLanguage: 'auto' | 'fr' | 'en';
-  onStudyModeChange: (mode: 'qa' | 'socratic') => void;
-  onAnswerLanguageChange: (language: 'auto' | 'fr' | 'en') => void;
+  studyMode?: 'qa' | 'socratic';
+  answerLanguage?: 'auto' | 'fr' | 'en';
+  onStudyModeChange?: (mode: 'qa' | 'socratic') => void;
+  onAnswerLanguageChange?: (language: 'auto' | 'fr' | 'en') => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
