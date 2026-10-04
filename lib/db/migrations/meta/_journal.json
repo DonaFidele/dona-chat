@@ -130,6 +130,24 @@
       "when": 1790971200000,
       "tag": "0018_resource_chunk_search",
       "breakpoints": true
+    },{
+      "idx": 19,
+      "version": "7",
+      "when": 1791057600000,
+      "tag": "0019_study_sheet_quiz_state",
+      "breakpoints": true
+    },{
+      "idx": 20,
+      "version": "7",
+      "when": 1791061200000,
+      "tag": "0020_leaderboard_profile",
+      "breakpoints": true
+    },{
+      "idx": 21,
+      "version": "7",
+      "when": 1791064800000,
+      "tag": "0021_quiz_attempt_question_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -39,6 +39,11 @@ import {
   note,
   savedQuestion,
   scheduleSlot,
+  studySheet,
+  studyQuiz,
+  quizAttempt,
+  type StudySheetSection,
+  type StoredQuizQuestion,
 } from './schema';
 import type { ArtifactKind } from '@/components/artifact';
 import { generateUUID } from '../utils';
@@ -154,6 +159,7 @@ export async function createSubject({
   examDate,
   explanationLevel,
   language,
+  studyMode,
   userId,
 }: {
   name: string;
@@ -162,7 +168,8 @@ export async function createSubject({
   teacher?: string | null;
   examDate?: string | null;
   explanationLevel?: 'normal' | 'simple' | 'eli12';
-  language?: 'fr' | 'en';
+  language?: 'auto' | 'fr' | 'en';
+  studyMode?: 'qa' | 'socratic';
   userId: string;
 }) {
   try {
@@ -176,6 +183,7 @@ export async function createSubject({
         examDate,
         explanationLevel,
         language,
+        studyMode,
         userId,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -280,6 +288,7 @@ export async function getSubjectsByUserId({ userId }: { userId: string }) {
         examDate: subject.examDate,
         explanationLevel: subject.explanationLevel,
         language: subject.language,
+        studyMode: subject.studyMode,
         createdAt: subject.createdAt,
         documentCount: count(resource.id),
       })
@@ -319,6 +328,7 @@ export async function updateSubject({
   examDate,
   explanationLevel,
   language,
+  studyMode,
 }: {
   id: string;
   userId: string;
@@ -328,7 +338,8 @@ export async function updateSubject({
   teacher?: string | null;
   examDate?: string | null;
   explanationLevel?: 'normal' | 'simple' | 'eli12';
-  language?: 'fr' | 'en';
+  language?: 'auto' | 'fr' | 'en';
+  studyMode?: 'qa' | 'socratic';
 }) {
   const [updated] = await dbClient
     .update(subject)
@@ -340,8 +351,51 @@ export async function updateSubject({
       examDate,
       explanationLevel,
       language,
+      studyMode,
       updatedAt: new Date(),
     })
+    .where(and(eq(subject.id, id), eq(subject.userId, userId)))
+    .returning();
+  return updated;
+}
+
+export async function updateSubjectStudySettings({
+  id,
+  userId,
+  language,
+  studyMode,
+}: {
+  id: string;
+  userId: string;
+  language?: 'auto' | 'fr' | 'en';
+  studyMode?: 'qa' | 'socratic';
+}) {
+  const [updated] = await dbClient
+    .update(subject)
+    .set({ language, studyMode, updatedAt: new Date() })
+    .where(and(eq(subject.id, id), eq(subject.userId, userId)))
+    .returning();
+  return updated;
+}
+
+export async function updateSubjectGenerationStatus({
+  id,
+  userId,
+  kind,
+  status,
+}: {
+  id: string;
+  userId: string;
+  kind: 'studySheet' | 'quiz';
+  status: 'none' | 'generating' | 'ready' | 'failed';
+}) {
+  const [updated] = await dbClient
+    .update(subject)
+    .set(
+      kind === 'studySheet'
+        ? { studySheetStatus: status, updatedAt: new Date() }
+        : { quizStatus: status, updatedAt: new Date() },
+    )
     .where(and(eq(subject.id, id), eq(subject.userId, userId)))
     .returning();
   return updated;
@@ -571,6 +625,295 @@ export async function deleteScheduleSlot({
     )
     .returning();
   return deletedSlot;
+}
+
+export async function getStudySheet({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  const [result] = await dbClient
+    .select()
+    .from(studySheet)
+    .where(
+      and(eq(studySheet.userId, userId), eq(studySheet.subjectId, subjectId)),
+    );
+  return result;
+}
+
+export async function saveStudySheet({
+  userId,
+  subjectId,
+  sections,
+  generatedFromVersion,
+}: {
+  userId: string;
+  subjectId: string;
+  sections: Array<StudySheetSection>;
+  generatedFromVersion: number;
+}) {
+  const [result] = await dbClient
+    .insert(studySheet)
+    .values({ userId, subjectId, sections, generatedFromVersion })
+    .onConflictDoUpdate({
+      target: studySheet.subjectId,
+      set: { sections, generatedFromVersion, updatedAt: new Date() },
+    })
+    .returning();
+  return result;
+}
+
+export async function getStudyQuiz({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  const [result] = await dbClient
+    .select()
+    .from(studyQuiz)
+    .where(
+      and(eq(studyQuiz.userId, userId), eq(studyQuiz.subjectId, subjectId)),
+    );
+  return result;
+}
+
+export async function saveStudyQuiz({
+  userId,
+  subjectId,
+  questions,
+  generatedFromVersion,
+}: {
+  userId: string;
+  subjectId: string;
+  questions: Array<StoredQuizQuestion>;
+  generatedFromVersion: number;
+}) {
+  const [result] = await dbClient
+    .insert(studyQuiz)
+    .values({ userId, subjectId, questions, generatedFromVersion })
+    .onConflictDoUpdate({
+      target: studyQuiz.subjectId,
+      set: { questions, generatedFromVersion, updatedAt: new Date() },
+    })
+    .returning();
+  return result;
+}
+
+export async function getInProgressQuizAttempt({
+  userId,
+  subjectId,
+  quizId,
+}: {
+  userId: string;
+  subjectId: string;
+  quizId: string;
+}) {
+  const [result] = await dbClient
+    .select()
+    .from(quizAttempt)
+    .where(
+      and(
+        eq(quizAttempt.userId, userId),
+        eq(quizAttempt.subjectId, subjectId),
+        eq(quizAttempt.quizId, quizId),
+        eq(quizAttempt.status, 'in_progress'),
+      ),
+    )
+    .orderBy(desc(quizAttempt.startedAt))
+    .limit(1);
+  return result;
+}
+
+export async function createQuizAttempt({
+  userId,
+  subjectId,
+  quizId,
+  total,
+  questionIndexes = [],
+}: {
+  userId: string;
+  subjectId: string;
+  quizId: string;
+  total: number;
+  questionIndexes?: Array<number>;
+}) {
+  const [result] = await dbClient
+    .insert(quizAttempt)
+    .values({
+      userId,
+      subjectId,
+      quizId,
+      total,
+      questionIndexes,
+      answers: [],
+    })
+    .returning();
+  return result;
+}
+
+export async function saveQuizAttemptProgress({
+  id,
+  userId,
+  subjectId,
+  answers,
+}: {
+  id: string;
+  userId: string;
+  subjectId: string;
+  answers: Array<number | null>;
+}) {
+  const [result] = await dbClient
+    .update(quizAttempt)
+    .set({ answers })
+    .where(
+      and(
+        eq(quizAttempt.id, id),
+        eq(quizAttempt.userId, userId),
+        eq(quizAttempt.subjectId, subjectId),
+        eq(quizAttempt.status, 'in_progress'),
+      ),
+    )
+    .returning();
+  return result;
+}
+
+export async function getQuizAttemptForUser({
+  id,
+  userId,
+  subjectId,
+}: {
+  id: string;
+  userId: string;
+  subjectId: string;
+}) {
+  const [result] = await dbClient
+    .select()
+    .from(quizAttempt)
+    .where(
+      and(
+        eq(quizAttempt.id, id),
+        eq(quizAttempt.userId, userId),
+        eq(quizAttempt.subjectId, subjectId),
+      ),
+    );
+  return result;
+}
+
+export async function finishQuizAttempt({
+  id,
+  userId,
+  subjectId,
+  answers,
+  score,
+  total,
+  percent,
+  durationSeconds,
+}: {
+  id: string;
+  userId: string;
+  subjectId: string;
+  answers: Array<number | null>;
+  score: number;
+  total: number;
+  percent: number;
+  durationSeconds: number;
+}) {
+  const [result] = await dbClient
+    .update(quizAttempt)
+    .set({
+      answers,
+      score,
+      total,
+      percent,
+      durationSeconds,
+      status: 'finished',
+      finishedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(quizAttempt.id, id),
+        eq(quizAttempt.userId, userId),
+        eq(quizAttempt.subjectId, subjectId),
+        eq(quizAttempt.status, 'in_progress'),
+      ),
+    )
+    .returning();
+  return result;
+}
+
+export async function getQuizAttemptRanking({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  return dbClient
+    .select()
+    .from(quizAttempt)
+    .where(
+      and(
+        eq(quizAttempt.userId, userId),
+        eq(quizAttempt.subjectId, subjectId),
+        eq(quizAttempt.status, 'finished'),
+      ),
+    )
+    .orderBy(desc(quizAttempt.percent), asc(quizAttempt.durationSeconds));
+}
+
+export async function getQuizAttemptHistory({
+  userId,
+  subjectId,
+}: {
+  userId: string;
+  subjectId: string;
+}) {
+  return dbClient
+    .select()
+    .from(quizAttempt)
+    .where(
+      and(
+        eq(quizAttempt.userId, userId),
+        eq(quizAttempt.subjectId, subjectId),
+        eq(quizAttempt.status, 'finished'),
+      ),
+    )
+    .orderBy(desc(quizAttempt.finishedAt));
+}
+
+export async function getQuizLeaderboard({ quizId }: { quizId: string }) {
+  const attempts = await dbClient
+    .select({
+      userId: quizAttempt.userId,
+      displayName: user.displayName,
+      score: quizAttempt.score,
+      total: quizAttempt.total,
+      percent: quizAttempt.percent,
+      durationSeconds: quizAttempt.durationSeconds,
+    })
+    .from(quizAttempt)
+    .innerJoin(user, eq(quizAttempt.userId, user.id))
+    .where(
+      and(
+        eq(quizAttempt.quizId, quizId),
+        eq(quizAttempt.status, 'finished'),
+        eq(user.showOnLeaderboard, true),
+        sql`${user.displayName} IS NOT NULL`,
+      ),
+    )
+    .orderBy(desc(quizAttempt.percent), asc(quizAttempt.durationSeconds));
+
+  const bestAttemptByUser = new Map<string, (typeof attempts)[number]>();
+  for (const attempt of attempts) {
+    if (!bestAttemptByUser.has(attempt.userId)) {
+      bestAttemptByUser.set(attempt.userId, attempt);
+    }
+  }
+  return [...bestAttemptByUser.values()];
 }
 
 export async function permanentlyDeleteSubject({
@@ -1170,6 +1513,7 @@ export async function searchSimilarChunks(
             : undefined,
           sourceName ? like(resource.sourceUri, `%${sourceName}%`) : undefined,
           subjectId ? eq(resource.subjectId, subjectId) : undefined,
+          eq(resource.status, 'ready'),
         ),
       )
       .orderBy((t) => desc(t.similarity))
@@ -1245,6 +1589,7 @@ export async function searchTextChunks(
             ),
           ),
           eq(resource.subjectId, subjectId),
+          eq(resource.status, 'ready'),
           sourceName ? like(resource.sourceUri, `%${sourceName}%`) : undefined,
           sql`"ResourceChunk"."search_vector" @@ websearch_to_tsquery('simple', ${textQuery})`,
         ),
@@ -1291,6 +1636,7 @@ export async function getCourseChunks({
             ),
           ),
           eq(resource.subjectId, subjectId),
+          eq(resource.status, 'ready'),
         ),
       )
       .orderBy(desc(resource.updatedAt))
@@ -1549,6 +1895,16 @@ export async function upsertResourceWithChunks({
           tokenCount: Math.ceil(chunk.content.length / 4),
         })),
       );
+
+      if (subjectId) {
+        await tx
+          .update(subject)
+          .set({
+            documentsVersion: sql`${subject.documentsVersion} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(subject.id, subjectId), eq(subject.userId, userId)));
+      }
     });
   } catch (error) {
     console.error('Failed to index uploaded resource:', error);

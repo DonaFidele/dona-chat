@@ -13,7 +13,8 @@ const createSubjectSchema = z.object({
   teacher: z.string().trim().max(120).optional(),
   examDate: z.string().date().optional(),
   explanationLevel: z.enum(['normal', 'simple', 'eli12']).optional(),
-  language: z.enum(['fr', 'en']).optional(),
+  language: z.enum(['auto', 'fr', 'en']).optional(),
+  studyMode: z.enum(['qa', 'socratic']).optional(),
 });
 
 export async function GET() {
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     examDate: payload.data.examDate || null,
     explanationLevel: payload.data.explanationLevel,
     language: payload.data.language,
+    studyMode: payload.data.studyMode,
     userId: session.user.id,
   });
 

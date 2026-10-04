@@ -28,7 +28,7 @@ type Subject = {
   teacher: string | null;
   examDate: string | null;
   explanationLevel: 'normal' | 'simple' | 'eli12';
-  language: 'fr' | 'en';
+  language: 'auto' | 'fr' | 'en';
   documentCount: number;
   latestChatId: string | null;
 };

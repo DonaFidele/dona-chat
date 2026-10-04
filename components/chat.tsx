@@ -21,9 +21,7 @@ import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import { getActiveSubjectId, setActiveSubjectId } from '@/lib/study-subject';
-import { QuizPanel, type QuizQuestion } from './quiz-panel';
 import { StudyToolRail } from './study-tool-rail';
-import { Button } from './ui/button';
 
 export function Chat({
   id,
@@ -35,6 +33,8 @@ export function Chat({
   autoResume,
   initialSubjectId,
   subjectName,
+  initialSubjectLanguage = 'auto',
+  initialStudyMode = 'qa',
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -45,6 +45,8 @@ export function Chat({
   autoResume: boolean;
   initialSubjectId?: string | null;
   subjectName?: string | null;
+  initialSubjectLanguage?: 'auto' | 'fr' | 'en';
+  initialStudyMode?: 'qa' | 'socratic';
 }) {
   const { mutate } = useSWRConfig();
 
@@ -52,6 +54,8 @@ export function Chat({
     chatId: id,
     initialVisibilityType,
   });
+  const [answerLanguage, setAnswerLanguage] = useState(initialSubjectLanguage);
+  const [studyMode, setStudyMode] = useState(initialStudyMode);
 
   useEffect(() => {
     if (initialSubjectId !== undefined) {
@@ -84,6 +88,8 @@ export function Chat({
       selectedChatModel: initialChatModel,
       selectedVisibilityType: visibilityType,
       selectedSubjectId: getActiveSubjectId() ?? initialSubjectId ?? null,
+      answerLanguage,
+      studyMode,
     }),
     onFinish: () => {
       window.history.replaceState({}, '', `/chat/${id}`);
@@ -104,45 +110,6 @@ export function Chat({
   const query = searchParams.get('query');
 
   const [hasAppendedQuery, setHasAppendedQuery] = useState(false);
-  const [isQuizOpen, setIsQuizOpen] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState<Array<QuizQuestion>>([]);
-  const [quizError, setQuizError] = useState<string | null>(null);
-  const [isQuizLoading, setIsQuizLoading] = useState(false);
-
-  const generateQuiz = async () => {
-    const subjectId = getActiveSubjectId() ?? initialSubjectId;
-    if (!subjectId) {
-      toast({
-        type: 'error',
-        description: 'Choisissez une matière avant de générer un quiz.',
-      });
-      return;
-    }
-
-    setIsQuizOpen(true);
-    setQuizQuestions([]);
-    setQuizError(null);
-    setIsQuizLoading(true);
-
-    try {
-      const response = await fetch(`/api/subjects/${subjectId}/quiz`, {
-        method: 'POST',
-      });
-      const result = await response.json().catch(() => null);
-      if (!response.ok)
-        throw new Error(result?.error ?? 'La génération du quiz a échoué.');
-      setQuizQuestions(result.questions);
-    } catch (error) {
-      setQuizError(
-        error instanceof Error
-          ? error.message
-          : 'La génération du quiz a échoué.',
-      );
-    } finally {
-      setIsQuizLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (query && !hasAppendedQuery) {
       append({
@@ -203,50 +170,22 @@ export function Chat({
                 setMessages={setMessages}
                 append={append}
                 selectedVisibilityType={visibilityType}
+                subjectId={initialSubjectId}
+                studyMode={studyMode}
+                answerLanguage={answerLanguage}
+                onStudyModeChange={setStudyMode}
+                onAnswerLanguageChange={setAnswerLanguage}
               />
             )}
           </form>
         </div>
         <StudyToolRail
-          onGenerateStudySheet={() =>
-            append({
-              role: 'user',
-              content: 'Génère une fiche de révision complète pour ce cours.',
-            })
-          }
-          onGenerateQuiz={() => void generateQuiz()}
           subjectId={initialSubjectId}
           onAskSavedQuestion={(question) =>
             append({ role: 'user', content: question })
           }
         />
       </div>
-
-      {isQuizOpen && (
-        <div className="fixed inset-0 z-20 flex bg-background">
-          {isQuizLoading && (
-            <div className="m-auto text-sm text-muted-foreground">
-              Génération des 5 questions à partir des documents du cours…
-            </div>
-          )}
-          {quizError && (
-            <div className="m-auto max-w-md space-y-4 text-center">
-              <p className="text-sm text-destructive">{quizError}</p>
-              <Button onClick={() => void generateQuiz()}>Réessayer</Button>
-              <Button variant="ghost" onClick={() => setIsQuizOpen(false)}>
-                Retour au chat
-              </Button>
-            </div>
-          )}
-          {!isQuizLoading && !quizError && quizQuestions.length === 5 && (
-            <QuizPanel
-              subjectName={subjectName ?? 'ce cours'}
-              questions={quizQuestions}
-              onBack={() => setIsQuizOpen(false)}
-            />
-          )}
-        </div>
-      )}
 
       <Artifact
         chatId={id}

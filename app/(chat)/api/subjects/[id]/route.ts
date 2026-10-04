@@ -18,7 +18,8 @@ const subjectSchema = z.object({
   teacher: z.string().trim().max(120).nullable().optional(),
   examDate: z.string().date().nullable().optional(),
   explanationLevel: z.enum(['normal', 'simple', 'eli12']).optional(),
-  language: z.enum(['fr', 'en']).optional(),
+  language: z.enum(['auto', 'fr', 'en']).optional(),
+  studyMode: z.enum(['qa', 'socratic']).optional(),
 });
 
 async function owner(id: string) {

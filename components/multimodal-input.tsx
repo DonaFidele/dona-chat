@@ -45,6 +45,11 @@ function PureMultimodalInput({
   handleSubmit,
   className,
   selectedVisibilityType,
+  subjectId,
+  studyMode,
+  answerLanguage,
+  onStudyModeChange,
+  onAnswerLanguageChange,
 }: {
   chatId: string;
   input: UseChatHelpers['input'];
@@ -59,6 +64,11 @@ function PureMultimodalInput({
   handleSubmit: UseChatHelpers['handleSubmit'];
   className?: string;
   selectedVisibilityType: VisibilityType;
+  subjectId?: string | null;
+  studyMode: 'qa' | 'socratic';
+  answerLanguage: 'auto' | 'fr' | 'en';
+  onStudyModeChange: (mode: 'qa' | 'socratic') => void;
+  onAnswerLanguageChange: (language: 'auto' | 'fr' | 'en') => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -87,7 +97,6 @@ function PureMultimodalInput({
     'input',
     '',
   );
-  const [studyMode, setStudyMode] = useState<'qa' | 'socratic'>('qa');
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -110,6 +119,37 @@ function PureMultimodalInput({
     adjustHeight();
   };
 
+  const saveStudySettings = async (
+    settings: Partial<{
+      studyMode: 'qa' | 'socratic';
+      language: 'auto' | 'fr' | 'en';
+    }>,
+  ) => {
+    if (!subjectId) return;
+    const response = await fetch(`/api/subjects/${subjectId}/study-settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    if (!response.ok)
+      toast.error('Les réglages n’ont pas pu être enregistrés.');
+  };
+
+  const changeMode = (mode: 'qa' | 'socratic') => {
+    onStudyModeChange(mode);
+    void saveStudySettings({ studyMode: mode });
+    toast.success(
+      mode === 'socratic'
+        ? 'Mode socratique activé'
+        : 'Mode questions-réponses activé',
+    );
+  };
+
+  const changeLanguage = (language: 'auto' | 'fr' | 'en') => {
+    onAnswerLanguageChange(language);
+    void saveStudySettings({ language });
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
@@ -124,7 +164,7 @@ function PureMultimodalInput({
     if (studyMode === 'socratic') {
       void append({
         role: 'user',
-        content: `${input}\n\nRéponds en mode socratique : guide-moi avec des questions courtes et progressives, en restant exclusivement fondé sur les documents du cours.`,
+        content: input,
         experimental_attachments: attachments,
       });
       setInput('');
@@ -313,7 +353,8 @@ function PureMultimodalInput({
             studyMode === 'qa' &&
               'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
           )}
-          onClick={() => setStudyMode('qa')}
+          onClick={() => changeMode('qa')}
+          aria-pressed={studyMode === 'qa'}
         >
           Questions-réponses
         </Button>
@@ -325,11 +366,40 @@ function PureMultimodalInput({
             studyMode === 'socratic' &&
               'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
           )}
-          onClick={() => setStudyMode('socratic')}
+          onClick={() => changeMode('socratic')}
+          aria-pressed={studyMode === 'socratic'}
         >
           Socratique
         </Button>
       </div>
+
+      <select
+        className="h-7 w-fit rounded-md border border-border bg-card px-2 text-xs"
+        value={answerLanguage}
+        onChange={(event) =>
+          changeLanguage(event.target.value as 'auto' | 'fr' | 'en')
+        }
+        aria-label="Langue des réponses"
+      >
+        <option value="auto">Langue auto</option>
+        <option value="fr">Français</option>
+        <option value="en">English</option>
+      </select>
+
+      {studyMode === 'socratic' && (
+        <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-foreground">
+          <strong>Mode socratique :</strong> je vous guide avec des indices
+          plutôt que de donner la réponse tout de suite.
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto px-1 text-xs"
+            onClick={() => changeMode('qa')}
+          >
+            Passer en Q&amp;R
+          </Button>
+        </div>
+      )}
 
       <input
         type="file"
@@ -367,7 +437,11 @@ function PureMultimodalInput({
       <Textarea
         data-testid="multimodal-input"
         ref={textareaRef}
-        placeholder="Posez une question sur les documents du cours…"
+        placeholder={
+          studyMode === 'socratic'
+            ? 'Posez une question, je vous guiderai étape par étape…'
+            : 'Posez une question sur les documents du cours…'
+        }
         value={input}
         onChange={handleInput}
         className={cx(

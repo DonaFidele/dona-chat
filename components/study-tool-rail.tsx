@@ -15,6 +15,8 @@ import { NotesPanel } from './notes-panel';
 import { SchedulePanel } from './schedule-panel';
 import { SidebarSources } from './sidebar-sources';
 import { SourceViewerPanel } from './source-viewer-panel';
+import { QuizStudyPanel } from './quiz-study-panel';
+import { StudySheetPanel } from './study-sheet-panel';
 import { Button } from './ui/button';
 
 type Tool =
@@ -34,13 +36,9 @@ type SelectedSource = {
 };
 
 export function StudyToolRail({
-  onGenerateStudySheet,
-  onGenerateQuiz,
   subjectId,
   onAskSavedQuestion,
 }: {
-  onGenerateStudySheet: () => void;
-  onGenerateQuiz: () => void;
   subjectId: string | null | undefined;
   onAskSavedQuestion: (question: string) => void;
 }) {
@@ -48,11 +46,14 @@ export function StudyToolRail({
   const [selectedSource, setSelectedSource] = useState<SelectedSource | null>(
     null,
   );
+  const [expanded, setExpanded] = useState(false);
   const panelOpen =
     activeTool === 'documents' ||
     activeTool === 'notes' ||
     activeTool === 'schedule' ||
-    activeTool === 'source';
+    activeTool === 'source' ||
+    activeTool === 'fiche' ||
+    activeTool === 'quiz';
 
   useEffect(() => {
     const openSource = (event: Event) => {
@@ -65,15 +66,28 @@ export function StudyToolRail({
     return () => window.removeEventListener('open-source-viewer', openSource);
   }, []);
 
+  useEffect(() => {
+    const onShortcut = (event: KeyboardEvent) => {
+      if (!event.altKey || event.defaultPrevented) return;
+      const tools: Array<Exclude<Tool, null>> = [
+        'documents',
+        'notes',
+        'schedule',
+        'quiz',
+        'fiche',
+      ];
+      const index = Number(event.key) - 1;
+      if (index < 0 || index >= tools.length) return;
+      event.preventDefault();
+      setActiveTool((current) =>
+        current === tools[index] ? null : tools[index],
+      );
+    };
+    window.addEventListener('keydown', onShortcut);
+    return () => window.removeEventListener('keydown', onShortcut);
+  }, []);
+
   const toggle = (tool: Exclude<Tool, null>) => {
-    if (tool === 'fiche') {
-      onGenerateStudySheet();
-      return;
-    }
-    if (tool === 'quiz') {
-      onGenerateQuiz();
-      return;
-    }
     setActiveTool((current) => (current === tool ? null : tool));
   };
 
@@ -84,7 +98,11 @@ export function StudyToolRail({
         ? 'Notes'
         : activeTool === 'schedule'
           ? 'Planning'
-          : 'Source';
+          : activeTool === 'quiz'
+            ? 'Quiz'
+            : activeTool === 'fiche'
+              ? 'Fiche de révision'
+              : 'Source';
 
   const panelContent =
     activeTool === 'documents' ? (
@@ -93,6 +111,13 @@ export function StudyToolRail({
       <NotesPanel subjectId={subjectId} onAsk={onAskSavedQuestion} />
     ) : activeTool === 'schedule' ? (
       <SchedulePanel subjectId={subjectId} />
+    ) : activeTool === 'quiz' ? (
+      <QuizStudyPanel subjectId={subjectId} />
+    ) : activeTool === 'fiche' ? (
+      <StudySheetPanel
+        subjectId={subjectId}
+        onExpand={() => setExpanded((value) => !value)}
+      />
     ) : (
       <SourceViewerPanel source={selectedSource} />
     );
@@ -100,7 +125,12 @@ export function StudyToolRail({
   return (
     <>
       {panelOpen && (
-        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border/70 bg-background/95 p-4 min-[821px]:block">
+        <aside
+          className={cn(
+            'hidden shrink-0 overflow-y-auto border-l border-border/70 bg-background/95 p-4 min-[821px]:block',
+            expanded ? 'w-[min(44vw,620px)]' : 'w-96',
+          )}
+        >
           <PanelHeader title={panelTitle} onClose={() => setActiveTool(null)} />
           {panelContent}
         </aside>
@@ -136,10 +166,18 @@ export function StudyToolRail({
         >
           <CalendarDays />
         </RailButton>
-        <RailButton label="Quiz" onClick={() => toggle('quiz')}>
+        <RailButton
+          active={activeTool === 'quiz'}
+          label="Quiz (Alt+4)"
+          onClick={() => toggle('quiz')}
+        >
           <ListChecks />
         </RailButton>
-        <RailButton label="Fiche de révision" onClick={() => toggle('fiche')}>
+        <RailButton
+          active={activeTool === 'fiche'}
+          label="Fiche de révision (Alt+5)"
+          onClick={() => toggle('fiche')}
+        >
           <BookMarked />
         </RailButton>
       </aside>
@@ -181,10 +219,18 @@ export function StudyToolRail({
         >
           <CalendarDays />
         </RailButton>
-        <RailButton label="Quiz" onClick={() => toggle('quiz')}>
+        <RailButton
+          active={activeTool === 'quiz'}
+          label="Quiz"
+          onClick={() => toggle('quiz')}
+        >
           <ListChecks />
         </RailButton>
-        <RailButton label="Générer une fiche" onClick={() => toggle('fiche')}>
+        <RailButton
+          active={activeTool === 'fiche'}
+          label="Générer une fiche"
+          onClick={() => toggle('fiche')}
+        >
           <BookMarked />
         </RailButton>
       </div>

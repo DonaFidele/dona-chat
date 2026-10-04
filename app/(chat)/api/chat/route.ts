@@ -30,7 +30,6 @@ import {
   type StudyRetrieval,
 } from '@/lib/ai/tools/search-knowledge';
 import { listKnowledgeFiles } from '@/lib/ai/tools/list-knowledge-files';
-import { createStudySheet } from '@/lib/ai/tools/create-study-sheet';
 import { isProductionEnvironment, useTelemetry } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -125,6 +124,8 @@ export async function POST(request: Request) {
       selectedChatModel,
       selectedVisibilityType,
       selectedSubjectId,
+      answerLanguage,
+      studyMode,
     } = requestBody;
 
     const session = await auth();
@@ -147,6 +148,8 @@ export async function POST(request: Request) {
     const chat = await getChatById({ id });
     let subjectId: string | null = null;
     let subjectName: string | null = null;
+    let subjectLanguage: 'auto' | 'fr' | 'en' = answerLanguage ?? 'auto';
+    let subjectStudyMode: 'qa' | 'socratic' = studyMode ?? 'qa';
 
     if (!chat) {
       if (selectedSubjectId) {
@@ -161,6 +164,8 @@ export async function POST(request: Request) {
 
         subjectId = selectedSubject.id;
         subjectName = selectedSubject.name;
+        subjectLanguage = answerLanguage ?? selectedSubject.language;
+        subjectStudyMode = studyMode ?? selectedSubject.studyMode;
       }
 
       const title = await generateTitleFromUserMessage({
@@ -186,6 +191,8 @@ export async function POST(request: Request) {
           userId: session.user.id,
         });
         subjectName = selectedSubject?.name ?? null;
+        subjectLanguage = answerLanguage ?? selectedSubject?.language ?? 'auto';
+        subjectStudyMode = studyMode ?? selectedSubject?.studyMode ?? 'qa';
       }
     }
 
@@ -297,13 +304,14 @@ STATUT : ${retrieval.hasDocuments ? (retrieval.results.length ? 'EXTRAITS DISPON
             requestHints,
             subjectName,
             retrievalContext,
+            language: subjectLanguage,
+            studyMode: subjectStudyMode,
           }),
           messages,
           maxSteps: 5,
           experimental_activeTools: [
             'searchKnowledge',
             'listKnowledgeFiles',
-            'createStudySheet',
             'getWeather',
             'createDocument',
             'updateDocument',
@@ -319,12 +327,6 @@ STATUT : ${retrieval.hasDocuments ? (retrieval.results.length ? 'EXTRAITS DISPON
             listKnowledgeFiles: listKnowledgeFiles({
               userId: session.user.id,
               subjectId,
-            }),
-            createStudySheet: createStudySheet({
-              session,
-              dataStream,
-              subjectId,
-              subjectName,
             }),
             getWeather,
             createDocument: createDocument({ session, dataStream }),

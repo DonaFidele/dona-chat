@@ -14,12 +14,15 @@ import {
   time,
   vector,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('User', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
   email: varchar('email', { length: 64 }).notNull(),
   password: varchar('password', { length: 64 }),
+  displayName: varchar('display_name', { length: 60 }),
+  showOnLeaderboard: boolean('show_on_leaderboard').notNull().default(false),
 });
 
 export type User = InferSelectModel<typeof user>;
@@ -36,9 +39,23 @@ export const subject = pgTable('Subject', {
   })
     .notNull()
     .default('normal'),
-  language: varchar('language', { enum: ['fr', 'en'] })
+  language: varchar('language', { enum: ['auto', 'fr', 'en'] })
     .notNull()
     .default('fr'),
+  studyMode: varchar('study_mode', { enum: ['qa', 'socratic'] })
+    .notNull()
+    .default('qa'),
+  documentsVersion: integer('documents_version').notNull().default(0),
+  studySheetStatus: varchar('study_sheet_status', {
+    enum: ['none', 'generating', 'ready', 'failed'],
+  })
+    .notNull()
+    .default('none'),
+  quizStatus: varchar('quiz_status', {
+    enum: ['none', 'generating', 'ready', 'failed'],
+  })
+    .notNull()
+    .default('none'),
   archivedAt: timestamp('archived_at'),
   userId: uuid('user_id')
     .notNull()
@@ -48,6 +65,134 @@ export const subject = pgTable('Subject', {
 });
 
 export type Subject = InferSelectModel<typeof subject>;
+
+export type StudySheetImportance = 'high' | 'medium';
+export type StudySheetItem = {
+  id: string;
+  text: string;
+  importance: StudySheetImportance;
+  citation?: {
+    chunkId: string;
+    documentId: string;
+    documentName: string;
+    page: number | null;
+  };
+};
+export type StudySheetSection = {
+  id: string;
+  title: string;
+  kind: string;
+  importance: StudySheetImportance;
+  items: Array<StudySheetItem>;
+};
+
+export const studySheet = pgTable(
+  'StudySheet',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id')
+      .notNull()
+      .references(() => subject.id, { onDelete: 'cascade' }),
+    sections: json('sections').$type<Array<StudySheetSection>>().notNull(),
+    generatedFromVersion: integer('generated_from_version').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    subjectUnique: uniqueIndex('study_sheet_subject_unique').on(
+      table.subjectId,
+    ),
+    ownerSubjectIndex: index('study_sheet_owner_subject_index').on(
+      table.userId,
+      table.subjectId,
+    ),
+  }),
+);
+
+export type StudySheet = InferSelectModel<typeof studySheet>;
+
+export type StoredQuizQuestion = {
+  id: string;
+  question: string;
+  answers: Array<string>;
+  correct: number;
+  explanation: string;
+  source: {
+    chunkId: string;
+    documentId: string;
+    name: string;
+    page: number | null;
+    snippet: string;
+  };
+};
+
+export const studyQuiz = pgTable(
+  'StudyQuiz',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id')
+      .notNull()
+      .references(() => subject.id, { onDelete: 'cascade' }),
+    questions: json('questions').$type<Array<StoredQuizQuestion>>().notNull(),
+    generatedFromVersion: integer('generated_from_version').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    subjectUnique: uniqueIndex('study_quiz_subject_unique').on(table.subjectId),
+    ownerSubjectIndex: index('study_quiz_owner_subject_index').on(
+      table.userId,
+      table.subjectId,
+    ),
+  }),
+);
+
+export type StudyQuiz = InferSelectModel<typeof studyQuiz>;
+
+export const quizAttempt = pgTable(
+  'QuizAttempt',
+  {
+    id: uuid('id').primaryKey().notNull().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id')
+      .notNull()
+      .references(() => subject.id, { onDelete: 'cascade' }),
+    quizId: uuid('quiz_id')
+      .notNull()
+      .references(() => studyQuiz.id, { onDelete: 'cascade' }),
+    questionIndexes: json('question_indexes')
+      .$type<Array<number>>()
+      .notNull()
+      .default([]),
+    answers: json('answers').$type<Array<number | null>>().notNull(),
+    score: integer('score'),
+    total: integer('total').notNull(),
+    percent: integer('percent'),
+    durationSeconds: integer('duration_seconds').notNull().default(0),
+    status: varchar('status', { enum: ['in_progress', 'finished'] })
+      .notNull()
+      .default('in_progress'),
+    startedAt: timestamp('started_at').notNull().defaultNow(),
+    finishedAt: timestamp('finished_at'),
+  },
+  (table) => ({
+    ownerSubjectIndex: index('quiz_attempt_owner_subject_index').on(
+      table.userId,
+      table.subjectId,
+      table.finishedAt,
+    ),
+  }),
+);
+
+export type QuizAttempt = InferSelectModel<typeof quizAttempt>;
 
 export const note = pgTable(
   'StudyNote',

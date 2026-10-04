@@ -23,7 +23,8 @@ export type NewSubject = {
   teacher?: string;
   examDate?: string;
   explanationLevel?: 'normal' | 'simple' | 'eli12';
-  language?: 'fr' | 'en';
+  language?: 'auto' | 'fr' | 'en';
+  studyMode?: 'qa' | 'socratic';
 };
 
 export function CreateSubjectModal({
@@ -47,7 +48,7 @@ export function CreateSubjectModal({
   const [explanationLevel, setExplanationLevel] = useState<
     'normal' | 'simple' | 'eli12'
   >('normal');
-  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
+  const [language, setLanguage] = useState<'auto' | 'fr' | 'en'>('auto');
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export function CreateSubjectModal({
       setTeacher(subject?.teacher ?? '');
       setExamDate(subject?.examDate ?? '');
       setExplanationLevel(subject?.explanationLevel ?? 'normal');
-      setLanguage(subject?.language ?? 'fr');
+      setLanguage(subject?.language ?? 'auto');
     } else {
       setName('');
       setDescription('');
@@ -66,7 +67,7 @@ export function CreateSubjectModal({
       setTeacher('');
       setExamDate('');
       setExplanationLevel('normal');
-      setLanguage('fr');
+      setLanguage('auto');
     }
   }, [open, subject]);
 
@@ -144,9 +145,10 @@ export function CreateSubjectModal({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={language}
                 onChange={(event) =>
-                  setLanguage(event.target.value as 'fr' | 'en')
+                  setLanguage(event.target.value as 'auto' | 'fr' | 'en')
                 }
               >
+                <option value="auto">Auto (langue de la question)</option>
                 <option value="fr">Français</option>
                 <option value="en">English</option>
               </select>
